@@ -14,7 +14,3 @@ manifest.ini
 # they are third-party executables and do not belong in the repository.
 msgfmt.exe
 xgettext.exe
-
-# Local test harness: stubs of NVDA's modules and the checks that run against
-# them. Development scaffolding, not part of the add-on.
-tests/

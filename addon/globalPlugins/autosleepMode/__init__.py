@@ -116,16 +116,23 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	# --- growing the list from the manual command ---------------------------
 	def _onSleepModeToggled(self):
-		"""Note an application the user has just put to sleep with the keystroke.
+		"""Follow the list along with what the user has just done by hand.
 
-		This also runs when the add-on itself switched sleep mode on, in which
-		case the application is on the list by definition and nothing is added.
+		The command toggles, so which way it has left sleep mode decides which of
+		the two options applies. They are looked at one at a time and never
+		together: they are independent settings, either can be on without the
+		other, and the add-on has no reason to care whether they agree.
+
+		This also runs when the add-on itself switched sleep mode on, and costs
+		nothing when it does: such an application is on the list by definition, so
+		there is nothing left to add. The add-on never switches sleep mode off, so
+		the other way round is always the user's own doing.
 		"""
-		if not addonConfig.getAddManuallySleptApps():
-			return
 		appModule = api.getFocusObject().appModule
-		# The command toggles, so it may just as well have switched sleep mode off,
-		# which this add-on has nothing to say about.
-		if appModule is None or not appModule.sleepMode or not appModule.appName:
+		if appModule is None or not appModule.appName:
 			return
-		addonConfig.addApp(appModule.appName)
+		if appModule.sleepMode:
+			if addonConfig.getAddManuallySleptApps():
+				addonConfig.addApp(appModule.appName)
+		elif addonConfig.getRemoveManuallyWokenApps():
+			addonConfig.removeApp(appModule.appName)
