@@ -1,0 +1,20 @@
+addon/doc/*.css
+addon/doc/en/
+*_docHandler.py
+*.html
+manifest.ini
+*.mo
+*.py[co]
+*.nvda-addon
+.sconsign.dblite
+/[0-9]*.[0-9]*.[0-9]*.json
+
+# GNU gettext binaries. Building the add-on needs msgfmt and xgettext on PATH
+# (they compile the translations); they are kept in this directory locally, but
+# they are third-party executables and do not belong in the repository.
+msgfmt.exe
+xgettext.exe
+
+# Local test harness: stubs of NVDA's modules and the checks that run against
+# them. Development scaffolding, not part of the add-on.
+tests/
