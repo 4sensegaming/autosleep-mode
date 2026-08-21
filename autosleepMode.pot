@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
 "Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
-"POT-Creation-Date: 2026-08-21 20:55+0200\n"
+"POT-Creation-Date: 2026-08-22 00:34+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -21,42 +21,47 @@ msgstr ""
 #. Add-on summary/title, usually the user visible name of the add-on
 #. Translators: Summary/title for this add-on
 #. to be shown on installation and add-on information found in add-on store
-#: addon\globalPlugins\autosleepMode\settings.py:35 buildVars.py:21
+#: addon\globalPlugins\autosleepMode\settings.py:66 buildVars.py:21
 msgid "Autosleep Mode"
 msgstr ""
 
 #. Translators: the label of the list of applications that are put to sleep automatically.
-#: addon\globalPlugins\autosleepMode\settings.py:47
+#: addon\globalPlugins\autosleepMode\settings.py:82
 msgid "Apps to sleep"
 msgstr ""
 
 #. Translators: the label of the list of applications that are running now.
-#: addon\globalPlugins\autosleepMode\settings.py:59
+#: addon\globalPlugins\autosleepMode\settings.py:90
 msgid "Running apps"
 msgstr ""
 
 #. Translators: an option to grow the list from the applications slept by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:73
+#: addon\globalPlugins\autosleepMode\settings.py:99
 msgid "Add apps that are put to sleep manually to the autosleep list"
 msgstr ""
 
+#. Translators: an option to shrink the list by the applications woken by hand.
+#: addon\globalPlugins\autosleepMode\settings.py:108
+msgid "Remove manually woken apps from the autosleep list"
+msgstr ""
+
 #. Translators: the button that takes several selected applications off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:126
+#: addon\globalPlugins\autosleepMode\settings.py:281
 msgid "Remove selected"
 msgstr ""
 
 #. Translators: the button that takes the current application off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:128
+#: addon\globalPlugins\autosleepMode\settings.py:283
 msgid "Remove"
 msgstr ""
 
 #. Translators: the button that puts several selected applications on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:133
+#: addon\globalPlugins\autosleepMode\settings.py:288
 msgid "Add selected"
 msgstr ""
 
 #. Translators: the button that puts the current application on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:135
+#: addon\globalPlugins\autosleepMode\settings.py:290
 msgid "Add"
 msgstr ""
 

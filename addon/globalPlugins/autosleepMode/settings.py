@@ -10,9 +10,23 @@ NVDA's configuration from :meth:`AutosleepSettingsPanel.onSave`, which the
 Settings dialog calls when OK or Apply is pressed. Cancelling therefore leaves
 the configuration exactly as it was, and the panel is built afresh every time the
 dialog is opened.
+
+Both lists are list views rather than list boxes. A multiple selection list box
+is the obvious control for the job and the wrong one: it reports a selection to
+the screen reader on every arrow key even when the key moved nothing, and its
+selection cannot be toggled from the keyboard at all. A list view stays silent
+when a key changes nothing, and reports an item being selected and unselected as
+it happens, which is what lets the screen reader say so.
+
+The item the arrow keys are on is always the selected item, until the user
+selects more than one, which is how every other list view on Windows behaves and
+what a screen reader expects. Leaving it merely current and not selected is worth
+naming as a mistake, because it looks tidier and is not: the list view then
+reports the item twice over, once as current and once as selected, and a screen
+reader reads it out twice and calls it "not selected" every time.
 """
 
-from typing import List, Sequence
+from typing import Dict, List, Sequence
 
 import addonHandler
 import winUser
@@ -25,9 +39,26 @@ from . import apps
 
 addonHandler.initTranslation()
 
-#: Moves the item with the caret in a list box, which a multiple selection list
-#: box tracks separately from the items that are selected.
-LB_SETCARETINDEX = 0x019E
+#: The keys that move towards the first item, and those that move towards the
+#: last. The numeric keypad sends its own codes for these when Num Lock is off.
+_TOWARDS_THE_TOP = frozenset(
+	(wx.WXK_UP, wx.WXK_PAGEUP, wx.WXK_HOME, wx.WXK_NUMPAD_UP, wx.WXK_NUMPAD_PAGEUP, wx.WXK_NUMPAD_HOME),
+)
+_TOWARDS_THE_BOTTOM = frozenset(
+	(wx.WXK_DOWN, wx.WXK_PAGEDOWN, wx.WXK_END, wx.WXK_NUMPAD_DOWN, wx.WXK_NUMPAD_PAGEDOWN, wx.WXK_NUMPAD_END),
+)
+
+#: Messages and styles for switching a list view's own tooltip off. A list view
+#: pops one up to show the whole of an item whose text is wider than the column,
+#: and a screen reader announces it, so a long window title is read out a second
+#: time and called a tooltip. Nothing here wants a tooltip, so the control is
+#: told to have none: the styles that ask for one are cleared, and the tooltip
+#: window it would use is taken away as well.
+_LVM_FIRST = 0x1000
+_LVM_SETEXTENDEDLISTVIEWSTYLE = _LVM_FIRST + 54
+_LVM_SETTOOLTIPS = _LVM_FIRST + 74
+_LVS_EX_INFOTIP = 0x00000400
+_LVS_EX_LABELTIP = 0x00004000
 
 
 class AutosleepSettingsPanel(SettingsPanel):
@@ -39,30 +70,25 @@ class AutosleepSettingsPanel(SettingsPanel):
 		#: The list of applications as it will be saved, edited in place until then.
 		self._sleepApps: List[str] = addonConfig.getApps()
 		#: Every application currently running, filled in by L{onPanelActivated}.
-		self._runningApps: List[str] = []
-		listSize = self.scaleSize((250, 150))
+		self._runningApps: List[apps.RunningApp] = []
+		#: Set while a list is being refilled, so that the events that causes are
+		#: not mistaken for the user changing the selection.
+		self._refreshing = False
+		self._listSize = self.scaleSize((250, 150))
 
-		self.sleepList = sHelper.addLabeledControl(
+		self.sleepList = self._addAppList(
+			sHelper,
 			# Translators: the label of the list of applications that are put to sleep automatically.
 			_("Apps to sleep"),
-			wx.ListBox,
-			choices=[],
-			size=listSize,
-			style=wx.LB_EXTENDED,
 		)
-		self.sleepList.Bind(wx.EVT_LISTBOX, self._onSelectionChanged)
 		self.removeButton = sHelper.addItem(wx.Button(self, label=self._removeLabel(1)))
 		self.removeButton.Bind(wx.EVT_BUTTON, self._onRemove)
 
-		self.runningList = sHelper.addLabeledControl(
+		self.runningList = self._addAppList(
+			sHelper,
 			# Translators: the label of the list of applications that are running now.
 			_("Running apps"),
-			wx.ListBox,
-			choices=[],
-			size=listSize,
-			style=wx.LB_EXTENDED,
 		)
-		self.runningList.Bind(wx.EVT_LISTBOX, self._onSelectionChanged)
 		self.addButton = sHelper.addItem(wx.Button(self, label=self._addLabel(1)))
 		self.addButton.Bind(wx.EVT_BUTTON, self._onAdd)
 
@@ -75,49 +101,178 @@ class AutosleepSettingsPanel(SettingsPanel):
 		)
 		self.addManuallySleptCheckBox.SetValue(addonConfig.getAddManuallySleptApps())
 
+		self.removeManuallyWokenCheckBox = sHelper.addItem(
+			wx.CheckBox(
+				self,
+				# Translators: an option to shrink the list by the applications woken by hand.
+				label=_("Remove manually woken apps from the autosleep list"),
+			),
+		)
+		self.removeManuallyWokenCheckBox.SetValue(addonConfig.getRemoveManuallyWokenApps())
+
 		self._refreshLists()
 
 	def onPanelActivated(self):
 		# Which applications are running is only true for as long as it takes the
 		# user to start or close one, so it is looked up each time the category is
 		# selected rather than once when the panel is built.
-		self._runningApps = apps.runningAppNames()
+		self._runningApps = apps.runningApps()
 		self._refreshLists()
 		super().onPanelActivated()
 
 	def onSave(self):
 		addonConfig.setApps(self._sleepApps)
 		addonConfig.setAddManuallySleptApps(self.addManuallySleptCheckBox.IsChecked())
+		addonConfig.setRemoveManuallyWokenApps(self.removeManuallyWokenCheckBox.IsChecked())
 
 	# --- the two lists ------------------------------------------------------
-	def _availableApps(self) -> List[str]:
+	def _addAppList(self, sHelper, label: str) -> wx.ListCtrl:
+		"""Add a labelled list of application names.
+
+		One nameless column, and no header over it, so that the list reads as the
+		plain column of names it looks like. The label beside it is what names the
+		list itself to a screen reader.
+		"""
+		listCtrl = sHelper.addLabeledControl(
+			label,
+			wx.ListCtrl,
+			size=self._listSize,
+			style=wx.LC_REPORT | wx.LC_NO_HEADER,
+		)
+		listCtrl.InsertColumn(0, "")
+		self._silenceTooltip(listCtrl)
+		for event in (wx.EVT_LIST_ITEM_SELECTED, wx.EVT_LIST_ITEM_DESELECTED, wx.EVT_LIST_ITEM_FOCUSED):
+			listCtrl.Bind(event, self._onSelectionChanged)
+		listCtrl.Bind(wx.EVT_KEY_DOWN, self._onListKeyDown)
+		return listCtrl
+
+	def _silenceTooltip(self, listCtrl: wx.ListCtrl):
+		"""Stop this list from putting a tooltip over an item it has had to cut short."""
+		handle = listCtrl.GetHandle()
+		winUser.sendMessage(handle, _LVM_SETEXTENDEDLISTVIEWSTYLE, _LVS_EX_LABELTIP | _LVS_EX_INFOTIP, 0)
+		winUser.sendMessage(handle, _LVM_SETTOOLTIPS, 0, 0)
+
+	def _availableApps(self) -> List[apps.RunningApp]:
 		"""The running applications that are not on the list already.
 
 		An application already listed is left out rather than shown and ignored,
-		so that adding one always has an effect.
+		so that adding one always has an effect. The order is the one the list is
+		displayed in, which is what lets a selected row be turned back into the
+		application it stands for.
 		"""
 		listed = {addonConfig.normalize(app) for app in self._sleepApps}
-		return [app for app in self._runningApps if addonConfig.normalize(app) not in listed]
+		return [app for app in self._runningApps if addonConfig.normalize(app.appName) not in listed]
+
+	def _displayNamesByApp(self) -> Dict[str, str]:
+		"""The title each running application is to be shown under, by its name."""
+		return {addonConfig.normalize(app.appName): app.displayName for app in self._runningApps}
 
 	def _refreshLists(self, sleepIndex: int = 0, runningIndex: int = 0):
-		"""Redisplay both lists, leaving the given item current in each."""
-		self._fillList(self.sleepList, self._sleepApps, sleepIndex)
-		self._fillList(self.runningList, self._availableApps(), runningIndex)
+		"""Redisplay both lists, leaving the given item current in each.
+
+		Both lists show an application under the title of its window, which is the
+		name the user sees on the application itself. An application on the
+		autosleep list need not be running, though, and one that is not has no
+		window to take a title from; that is the case, and the only one, where the
+		stored name is shown instead.
+		"""
+		titles = self._displayNamesByApp()
+		self._fillList(
+			self.sleepList,
+			[titles.get(addonConfig.normalize(app), app) for app in self._sleepApps],
+			sleepIndex,
+		)
+		self._fillList(self.runningList, [app.displayName for app in self._availableApps()], runningIndex)
 		self._updateButtons()
 
-	def _fillList(self, listBox: wx.ListBox, items: Sequence[str], index: int):
-		listBox.Set(list(items))
-		if not items:
-			return
-		index = max(0, min(index, len(items) - 1))
-		listBox.SetSelection(index)
-		# Selecting an item in a multiple selection list box does not move the
-		# caret to it, and it is the item with the caret that is announced when
-		# the list is tabbed into and that the arrow keys start from.
-		winUser.sendMessage(listBox.GetHandle(), LB_SETCARETINDEX, index, 0)
+	def _fillList(self, listCtrl: wx.ListCtrl, items: Sequence[str], index: int):
+		"""Put C{items} in the list, with the one at C{index} current and selected."""
+		self._refreshing = True
+		try:
+			listCtrl.DeleteAllItems()
+			for position, text in enumerate(items):
+				listCtrl.InsertItem(position, text)
+			# The single column carries the whole width, so that a long window
+			# title is not cut off in the middle.
+			listCtrl.SetColumnWidth(0, listCtrl.GetClientSize().width)
+			if not items:
+				return
+			index = max(0, min(index, len(items) - 1))
+			# Current and selected together, which is the state the arrow keys
+			# leave an item in and the one the screen reader reads as a plain name.
+			listCtrl.Focus(index)
+			listCtrl.Select(index)
+		finally:
+			self._refreshing = False
 
-	def _selectedStrings(self, listBox: wx.ListBox) -> List[str]:
-		return [listBox.GetString(index) for index in listBox.GetSelections()]
+	def _selectedIndices(self, listCtrl: wx.ListCtrl) -> List[int]:
+		"""The positions of the items the user has selected, in order."""
+		indices: List[int] = []
+		index = listCtrl.GetFirstSelected()
+		while index != -1:
+			indices.append(index)
+			index = listCtrl.GetNextSelected(index)
+		return indices
+
+	def _returnFocus(self, emptied: wx.ListCtrl, other: wx.ListCtrl):
+		"""Put focus back on a list once a button has done its work.
+
+		Never on the button that was pressed. A button says nothing about what it
+		has just done, so focus left sitting on it leaves the screen reader silent
+		and the user with no idea whether anything happened. A list, given focus,
+		reads out where it now is, which is the answer.
+
+		The list the button belongs to is the one to go back to, since that is
+		where the user was, unless the button has just emptied it.
+		"""
+		(emptied if emptied.GetItemCount() else other).SetFocus()
+
+	def _onListKeyDown(self, evt: wx.KeyEvent):
+		"""Drop a navigation key that has nowhere to go.
+
+		Home on the first item, and End on the last, leave the item the user is on
+		exactly where it was, but the list view still reports a selection for it,
+		and a screen reader dutifully reads the item out again. Reading the same
+		item over and over is how the list tells the user it has run out of items,
+		and it is the wrong way round: silence is what says that.
+
+		So the key is dropped here instead, before the list view ever sees it.
+		Nothing happens, nothing is reported, and nothing is said. The arrow keys
+		are dropped on the same terms even though the list view already ignores
+		them quietly, so that the rule is one rule.
+		"""
+		if self._movesNothing(evt):
+			# Deliberately not skipped: skipping is what passes the key on.
+			return
+		evt.Skip()
+
+	def _movesNothing(self, evt: wx.KeyEvent) -> bool:
+		"""Whether this key would leave the list exactly as it is.
+
+		Only a key pressed on its own is considered. Shift and control turn these
+		same keys into ways of selecting rather than of moving, and what they do at
+		either end of the list is the list view's business, not ours.
+
+		Being at the end the key points to is not on its own enough. Home and End
+		also draw the selection in to the single item they land on, so with several
+		applications selected they still have something to do, and doing it is worth
+		reporting. The key is only dropped when the item the user is on is the whole
+		of the selection, and there is therefore nothing left for it to change.
+		"""
+		if evt.GetModifiers() != wx.MOD_NONE:
+			return False
+		listCtrl = evt.GetEventObject()
+		current = listCtrl.GetFocusedItem()
+		if current == -1:
+			return False
+		keyCode = evt.GetKeyCode()
+		if keyCode in _TOWARDS_THE_TOP:
+			atTheEnd = current == 0
+		elif keyCode in _TOWARDS_THE_BOTTOM:
+			atTheEnd = current == listCtrl.GetItemCount() - 1
+		else:
+			return False
+		return atTheEnd and self._selectedIndices(listCtrl) in ([], [current])
 
 	# --- the two buttons ----------------------------------------------------
 	def _removeLabel(self, selectionCount: int) -> str:
@@ -140,42 +295,46 @@ class AutosleepSettingsPanel(SettingsPanel):
 		A disabled button is skipped when tabbing, which is what keeps a button
 		out of the way while the list it belongs to has nothing to act on.
 		"""
-		for button, listBox, label in (
+		for button, listCtrl, label in (
 			(self.removeButton, self.sleepList, self._removeLabel),
 			(self.addButton, self.runningList, self._addLabel),
 		):
-			newLabel = label(len(listBox.GetSelections()))
+			newLabel = label(len(self._selectedIndices(listCtrl)))
 			if button.GetLabel() != newLabel:
 				button.SetLabel(newLabel)
-			button.Enable(listBox.GetCount() > 0)
+			button.Enable(listCtrl.GetItemCount() > 0)
 
-	def _onSelectionChanged(self, evt: wx.CommandEvent):
-		self._updateButtons()
+	def _onSelectionChanged(self, evt: wx.ListEvent):
+		# Refilling a list selects and focuses items of its own accord; those are
+		# not the user changing their mind and the buttons are updated once at the
+		# end of the refresh anyway.
+		if not self._refreshing:
+			self._updateButtons()
 		evt.Skip()
 
 	def _onRemove(self, evt: wx.CommandEvent):
-		selection = self.sleepList.GetSelections()
-		if not selection:
+		chosen = self._selectedIndices(self.sleepList)
+		if not chosen:
 			return
-		removed = {addonConfig.normalize(name) for name in self._selectedStrings(self.sleepList)}
-		self._sleepApps = [app for app in self._sleepApps if addonConfig.normalize(app) not in removed]
-		if not self._sleepApps:
-			# This button is about to be disabled and it is the one with focus, so
-			# focus is put somewhere sensible first rather than left to land
-			# wherever Windows decides.
-			self.runningList.SetFocus()
-		self._refreshLists(sleepIndex=selection[0])
+		# A row is a title as often as it is a name, so what a row stands for is
+		# found by its position in the list it was filled from, never by its text.
+		removed = set(chosen)
+		self._sleepApps = [app for index, app in enumerate(self._sleepApps) if index not in removed]
+		# Refill first, so that the list being given focus is the new one and what
+		# the screen reader reads is where the user has actually ended up.
+		self._refreshLists(sleepIndex=chosen[0])
+		self._returnFocus(self.sleepList, self.runningList)
 
 	def _onAdd(self, evt: wx.CommandEvent):
-		selection = self.runningList.GetSelections()
-		if not selection:
+		chosen = self._selectedIndices(self.runningList)
+		if not chosen:
 			return
+		# As in _onRemove: the row is resolved by its position, since its text is
+		# a title rather than the name that is stored.
+		available = self._availableApps()
 		self._sleepApps = sorted(
-			self._sleepApps + self._selectedStrings(self.runningList),
+			self._sleepApps + [available[index].appName for index in chosen if index < len(available)],
 			key=addonConfig.normalize,
 		)
-		if not self._availableApps():
-			# As in _onRemove: move away before the button disappears from the
-			# tab order underneath the focus.
-			self.sleepList.SetFocus()
-		self._refreshLists(runningIndex=selection[0])
+		self._refreshLists(runningIndex=chosen[0])
+		self._returnFocus(self.runningList, self.sleepList)

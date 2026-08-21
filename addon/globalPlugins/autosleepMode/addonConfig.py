@@ -29,6 +29,10 @@ confspec = {
 	"apps": "string_list(default=list())",
 	# Whether switching sleep mode on by hand also adds that application to `apps`.
 	"addManuallySleptApps": "boolean(default=False)",
+	# Whether switching sleep mode off by hand also takes that application out of `apps`.
+	# Independent of the option above: either may be on without the other, and the
+	# add-on has no reason to care whether they agree.
+	"removeManuallyWokenApps": "boolean(default=False)",
 }
 
 
@@ -77,6 +81,18 @@ def setAddManuallySleptApps(value: bool):
 	config.conf[CONF_SECTION]["addManuallySleptApps"] = value
 
 
+def getRemoveManuallyWokenApps() -> bool:
+	"""Whether an application woken by hand leaves the list automatically."""
+	try:
+		return config.conf[CONF_SECTION]["removeManuallyWokenApps"]
+	except (KeyError, TypeError):
+		return False
+
+
+def setRemoveManuallyWokenApps(value: bool):
+	config.conf[CONF_SECTION]["removeManuallyWokenApps"] = value
+
+
 def isListed(appName: str) -> bool:
 	"""Whether this application should be put to sleep."""
 	wanted = normalize(appName)
@@ -88,3 +104,15 @@ def addApp(appName: str):
 	if isListed(appName):
 		return
 	setApps(sorted(getApps() + [appName], key=normalize))
+
+
+def removeApp(appName: str):
+	"""Take an application off the list, if it is on it.
+
+	Nothing is written when it is not, so that this cannot mark the configuration
+	as changed on an application the user never listed.
+	"""
+	if not isListed(appName):
+		return
+	wanted = normalize(appName)
+	setApps([listed for listed in getApps() if normalize(listed) != wanted])
