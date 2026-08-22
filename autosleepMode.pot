@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
-"POT-Creation-Date: 2026-08-22 18:47+0200\n"
+"POT-Creation-Date: 2026-08-22 22:00+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,10 +17,13 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Translators: the title of the add-on's category in NVDA's Settings dialog.
+#. Translators: the category this add-on's commands are listed under in the
+#. Input gestures dialog.
 #. Add-on summary/title, usually the user visible name of the add-on
 #. Translators: Summary/title for this add-on
 #. to be shown on installation and add-on information found in add-on store
-#: addon\globalPlugins\autosleepMode\settings.py:66 buildVars.py:21
+#: addon\globalPlugins\autosleepMode\settings.py:66
+#: addon\globalPlugins\autosleepMode\__init__.py:36 buildVars.py:21
 msgid "Autosleep Mode"
 msgstr ""
 
@@ -70,6 +73,12 @@ msgstr ""
 #. Translators: the button that puts the current application on the autosleep list.
 #: addon\globalPlugins\autosleepMode\settings.py:362
 msgid "Add"
+msgstr ""
+
+#. Translators: the description of the command that opens the add-on's
+#. settings, shown in the Input gestures dialog.
+#: addon\globalPlugins\autosleepMode\__init__.py:60
+msgid "Displays autosleep mode settings"
 msgstr ""
 
 #: buildVars.py:25

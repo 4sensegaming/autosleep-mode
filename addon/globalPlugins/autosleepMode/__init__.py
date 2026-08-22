@@ -6,24 +6,35 @@
 # See the file COPYING.txt for more details.
 
 """The global plugin: it watches for foreground changes, registers the settings
-panel, and notices when the user switches sleep mode on by hand.
+panel and the command that opens it, and notices when the user switches sleep
+mode on by hand.
 """
 
+import addonHandler
 import api
 import core
 import eventHandler
 import globalPluginHandler
+import gui
 import queueHandler
 import speech
+import wx
 from gui.settingsDialogs import NVDASettingsDialog
 from logHandler import log
+from scriptHandler import script
 
 from . import addonConfig
 from . import settings as settingsModule
 from . import sleepMode
 
+addonHandler.initTranslation()
+
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
+	# Translators: the category this add-on's commands are listed under in the
+	# Input gestures dialog.
+	scriptCategory = _("Autosleep Mode")
+
 	def __init__(self):
 		super(GlobalPlugin, self).__init__()
 		addonConfig.initialize()
@@ -41,6 +52,25 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# extension point reports an unknown handler rather than complaining.
 		core.postNvdaStartup.unregister(self._checkFocusedApp)
 		super(GlobalPlugin, self).terminate()
+
+	# --- the command --------------------------------------------------------
+	@script(
+		# Translators: the description of the command that opens the add-on's
+		# settings, shown in the Input gestures dialog.
+		description=_("Displays autosleep mode settings"),
+	)
+	def script_showSettings(self, gesture):
+		"""Open NVDA's Settings dialog on this add-on's category.
+
+		The dialog is opened from the main thread rather than from the thread the
+		command was run on, which is what every one of NVDA's own commands that
+		puts a dialog on the screen does.
+		"""
+		wx.CallAfter(
+			gui.mainFrame.popupSettingsDialog,
+			NVDASettingsDialog,
+			settingsModule.AutosleepSettingsPanel,
+		)
 
 	# --- the automatic behaviour --------------------------------------------
 	def event_foreground(self, obj, nextHandler):
