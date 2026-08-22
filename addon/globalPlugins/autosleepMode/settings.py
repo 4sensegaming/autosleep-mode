@@ -78,6 +78,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 
 		self.sleepList = self._addAppList(
 			sHelper,
+			settingsSizer,
 			# Translators: the label of the list of applications that are put to sleep automatically.
 			_("Apps to sleep"),
 		)
@@ -86,8 +87,10 @@ class AutosleepSettingsPanel(SettingsPanel):
 
 		self.runningList = self._addAppList(
 			sHelper,
-			# Translators: the label of the list of applications that are running now.
-			_("Running apps"),
+			settingsSizer,
+			# Translators: the label of the list of applications that are running now and
+			# can be added to the autosleep list.
+			_("Available apps"),
 		)
 		self.addButton = sHelper.addItem(wx.Button(self, label=self._addLabel(1)))
 		self.addButton.Bind(wx.EVT_BUTTON, self._onAdd)
@@ -96,7 +99,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 			wx.CheckBox(
 				self,
 				# Translators: an option to grow the list from the applications slept by hand.
-				label=_("Add apps that are put to sleep manually to the autosleep list"),
+				label=_("Add apps with manually activated sleep mode to the autosleep list"),
 			),
 		)
 		self.addManuallySleptCheckBox.SetValue(addonConfig.getAddManuallySleptApps())
@@ -126,7 +129,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 		addonConfig.setRemoveManuallyWokenApps(self.removeManuallyWokenCheckBox.IsChecked())
 
 	# --- the two lists ------------------------------------------------------
-	def _addAppList(self, sHelper, label: str) -> wx.ListCtrl:
+	def _addAppList(self, sHelper, settingsSizer: wx.Sizer, label: str) -> wx.ListCtrl:
 		"""Add a labelled list of application names.
 
 		One nameless column, and no header over it, so that the list reads as the
@@ -141,10 +144,49 @@ class AutosleepSettingsPanel(SettingsPanel):
 		)
 		listCtrl.InsertColumn(0, "")
 		self._silenceTooltip(listCtrl)
+		self._widenToThePanel(listCtrl, settingsSizer)
 		for event in (wx.EVT_LIST_ITEM_SELECTED, wx.EVT_LIST_ITEM_DESELECTED, wx.EVT_LIST_ITEM_FOCUSED):
 			listCtrl.Bind(event, self._onSelectionChanged)
 		listCtrl.Bind(wx.EVT_KEY_DOWN, self._onListKeyDown)
+		listCtrl.Bind(wx.EVT_SIZE, self._onListResized)
 		return listCtrl
+
+	def _widenToThePanel(self, listCtrl: wx.ListCtrl, settingsSizer: wx.Sizer):
+		"""Let this list have all the width the panel can spare, for longer titles.
+
+		A sizer gives its spare room only to the items that have asked for it, and
+		an item that has not keeps the size it was built with, so the width has to
+		be asked for at both of the steps between the list and the panel: the row
+		the list shares with its label, and the column of rows the panel is.
+
+		In the row, which is horizontal, it is the proportion that hands the width
+		left over from the label to the list. In the panel's column it is expanding
+		that makes the row as wide as the panel; the proportion is deliberately left
+		alone there, since in a vertical sizer that would divide up the height
+		instead and make the lists taller than they were meant to be.
+		"""
+		row = listCtrl.GetContainingSizer()
+		item = row.GetItem(listCtrl)
+		if item is not None:
+			item.SetFlag(item.GetFlag() | wx.EXPAND)
+			# Asked for only where it means width. Which sizer a helper put the list
+			# in is that helper's business, so the sizer is asked rather than assumed.
+			if isinstance(row, wx.BoxSizer) and row.GetOrientation() == wx.HORIZONTAL:
+				item.SetProportion(1)
+		item = settingsSizer.GetItem(row) if row is not settingsSizer else None
+		if item is not None:
+			item.SetFlag(item.GetFlag() | wx.EXPAND)
+
+	def _onListResized(self, evt: wx.SizeEvent):
+		"""Keep the single column as wide as the list itself.
+
+		How wide the list ends up is not known until the panel has been laid out,
+		and it changes again whenever the dialog is resized, so the column follows
+		the list rather than being set once when the list is filled.
+		"""
+		listCtrl = evt.GetEventObject()
+		listCtrl.SetColumnWidth(0, listCtrl.GetClientSize().width)
+		evt.Skip()
 
 	def _silenceTooltip(self, listCtrl: wx.ListCtrl):
 		"""Stop this list from putting a tooltip over an item it has had to cut short."""
@@ -163,26 +205,56 @@ class AutosleepSettingsPanel(SettingsPanel):
 		listed = {addonConfig.normalize(app) for app in self._sleepApps}
 		return [app for app in self._runningApps if addonConfig.normalize(app.appName) not in listed]
 
-	def _displayNamesByApp(self) -> Dict[str, str]:
-		"""The title each running application is to be shown under, by its name."""
-		return {addonConfig.normalize(app.appName): app.displayName for app in self._runningApps}
+	def _runningAppsByName(self) -> Dict[str, apps.RunningApp]:
+		"""Each running application by its name, so that a listed one can be looked up."""
+		return {addonConfig.normalize(app.appName): app for app in self._runningApps}
+
+	def _row(self, app: apps.RunningApp) -> str:
+		"""The line shown for a running application.
+
+		An application NVDA is asleep in says so, which is worth saying in either
+		list: in the autosleep list it is the add-on's own work reported back, and
+		in the list of available applications it is one the user has put to sleep by
+		hand without adding it here, which they may well have meant to do.
+
+		Marking the text is safe because the text is never read back: a row is
+		always resolved by its position in the list it was filled from, never by
+		what it says, which is what leaves the text free to carry something for the
+		user to hear.
+		"""
+		if not app.sleeping:
+			return app.displayName
+		# Translators: how an application NVDA is currently asleep in is shown in
+		# both lists of applications. {app} is the name of the application.
+		return _("{app} (sleeping)").format(app=app.displayName)
+
+	def _sleepListRow(self, appName: str, running: Dict[str, apps.RunningApp]) -> str:
+		"""The line shown for an application on the autosleep list.
+
+		An application on the list need not be running, and one that is not has no
+		window to take a title from and cannot be asleep either; that is the case,
+		and the only one, where the stored name is shown on its own.
+		"""
+		app = running.get(addonConfig.normalize(appName))
+		return appName if app is None else self._row(app)
 
 	def _refreshLists(self, sleepIndex: int = 0, runningIndex: int = 0):
 		"""Redisplay both lists, leaving the given item current in each.
 
 		Both lists show an application under the title of its window, which is the
-		name the user sees on the application itself. An application on the
-		autosleep list need not be running, though, and one that is not has no
-		window to take a title from; that is the case, and the only one, where the
-		stored name is shown instead.
+		name the user sees on the application itself, marked if NVDA is asleep in it.
 		"""
-		titles = self._displayNamesByApp()
+		running = self._runningAppsByName()
 		self._fillList(
 			self.sleepList,
-			[titles.get(addonConfig.normalize(app), app) for app in self._sleepApps],
+			[self._sleepListRow(app, running) for app in self._sleepApps],
 			sleepIndex,
 		)
-		self._fillList(self.runningList, [app.displayName for app in self._availableApps()], runningIndex)
+		self._fillList(
+			self.runningList,
+			[self._row(app) for app in self._availableApps()],
+			runningIndex,
+		)
 		self._updateButtons()
 
 	def _fillList(self, listCtrl: wx.ListCtrl, items: Sequence[str], index: int):

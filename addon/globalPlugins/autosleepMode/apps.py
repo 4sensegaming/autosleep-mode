@@ -59,6 +59,12 @@ class RunningApp(NamedTuple):
 	#: name the user knows it by, falling back to L{appName} for a window that
 	#: carries no title at all.
 	displayName: str
+	#: Whether NVDA's sleep mode is on for this application at the moment the list
+	#: is drawn up. True whether the add-on switched it on when the application
+	#: came to the foreground or the user switched it on by hand, and it is the
+	#: second of those that makes it worth showing: an application slept by hand
+	#: and not on the autosleep list is one the user may have meant to put there.
+	sleeping: bool
 
 
 def _topLevelWindows() -> List[int]:
@@ -176,6 +182,19 @@ def _title(hwnd: int) -> str:
 	return winUser.getWindowText(hwnd).strip()
 
 
+def _isAsleep(processId: int) -> bool:
+	"""Whether NVDA's sleep mode is on for the application behind this process.
+
+	Only the app modules NVDA has made already are consulted. Asking for one that
+	does not exist yet would build it, and building an app module for every window
+	on the system is both a real cost and no help: sleep mode is a state kept on
+	the app module, so an application NVDA has never made one for cannot have been
+	put to sleep either.
+	"""
+	appModule = appModuleHandler.runningTable.get(processId)
+	return bool(appModule is not None and appModule.sleepMode)
+
+
 def _coreWindowProcessIdsByTitle(windows: List[int]) -> Dict[str, int]:
 	"""The process behind each packaged application parked on the desktop, by title.
 
@@ -218,10 +237,11 @@ def runningApps() -> List[RunningApp]:
 	"""The applications that have a window open now, ready to be listed.
 
 	One entry per application however many windows it has, titled after its
-	frontmost one and sorted the way the user reads them. NVDA is left out
-	deliberately: its own windows, the Settings dialog this list is shown in among
-	them, are switchable like any others, but offering NVDA as something to put to
-	sleep would only give the user a way to silence NVDA's own interface.
+	frontmost one, carrying whether NVDA is asleep in it, and sorted the way the
+	user reads them. NVDA is left out deliberately: its own windows, the Settings
+	dialog this list is shown in among them, are switchable like any others, but
+	offering NVDA as something to put to sleep would only give the user a way to
+	silence NVDA's own interface.
 	"""
 	windows = _topLevelWindows()
 	#: Built only if a packaged application turns up, since it costs a pass of its own.
@@ -250,11 +270,12 @@ def runningApps() -> List[RunningApp]:
 			if not appName:
 				continue
 			title = _title(hwnd)
+			sleeping = _isAsleep(processId)
 		except Exception:
 			log.debugWarning("Error examining window %r" % hwnd, exc_info=True)
 			continue
 		# The windows come front to back, so the first one seen for an application
 		# is its frontmost, and gives the title the user is most likely to know it by.
-		found.setdefault(appName, RunningApp(appName, title or appName))
+		found.setdefault(appName, RunningApp(appName, title or appName, sleeping))
 
 	return sorted(found.values(), key=lambda app: (app.displayName.lower(), app.appName))

@@ -1,20 +1,17 @@
-# SOME DESCRIPTIVE TITLE.
-# Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
-# This file is distributed under the same license as the PACKAGE package.
-# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
+# Autosleep Mode NVDA Add-on
+# Copyright (C) 2026 Lukáš Hosnedl
+# This file is distributed under the same license as the add-on package.
+# FIRST AUTHOR <lukas@4sensegaming.cz>, 2026.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
-"Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
-"POT-Creation-Date: 2026-08-22 00:34+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
-"Language-Team: LANGUAGE <LL@li.org>\n"
+"POT-Creation-Date: 2026-08-22 18:24+0200\n"
+"Last-Translator: Lukáš Hosnedl <lukas@4sensegaming.cz>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=CHARSET\n"
+"Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Translators: the title of the add-on's category in NVDA's Settings dialog.
@@ -26,42 +23,49 @@ msgid "Autosleep Mode"
 msgstr ""
 
 #. Translators: the label of the list of applications that are put to sleep automatically.
-#: addon\globalPlugins\autosleepMode\settings.py:82
+#: addon\globalPlugins\autosleepMode\settings.py:83
 msgid "Apps to sleep"
 msgstr ""
 
-#. Translators: the label of the list of applications that are running now.
-#: addon\globalPlugins\autosleepMode\settings.py:90
-msgid "Running apps"
+#. Translators: the label of the list of applications that are running now and
+#. can be added to the autosleep list.
+#: addon\globalPlugins\autosleepMode\settings.py:93
+msgid "Available apps"
 msgstr ""
 
 #. Translators: an option to grow the list from the applications slept by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:99
-msgid "Add apps that are put to sleep manually to the autosleep list"
+#: addon\globalPlugins\autosleepMode\settings.py:102
+msgid "Add apps with manually activated sleep mode to the autosleep list"
 msgstr ""
 
 #. Translators: an option to shrink the list by the applications woken by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:108
+#: addon\globalPlugins\autosleepMode\settings.py:111
 msgid "Remove manually woken apps from the autosleep list"
 msgstr ""
 
+#. Translators: how an application NVDA is currently asleep in is shown in
+#. both lists of applications. {app} is the name of the application.
+#: addon\globalPlugins\autosleepMode\settings.py:229
+msgid "{app} (sleeping)"
+msgstr ""
+
 #. Translators: the button that takes several selected applications off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:281
+#: addon\globalPlugins\autosleepMode\settings.py:353
 msgid "Remove selected"
 msgstr ""
 
 #. Translators: the button that takes the current application off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:283
+#: addon\globalPlugins\autosleepMode\settings.py:355
 msgid "Remove"
 msgstr ""
 
 #. Translators: the button that puts several selected applications on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:288
+#: addon\globalPlugins\autosleepMode\settings.py:360
 msgid "Add selected"
 msgstr ""
 
 #. Translators: the button that puts the current application on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:290
+#: addon\globalPlugins\autosleepMode\settings.py:362
 msgid "Add"
 msgstr ""
 
