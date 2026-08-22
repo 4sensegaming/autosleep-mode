@@ -1,6 +1,7 @@
 # Automatický režim spánku
 
 * Autor: Lukáš Hosnedl
+* Minimální verze NVDA: 2026.1
 * Poslední testovaná verze NVDA: 2026.3
 
 ## Popis
@@ -21,12 +22,14 @@ Doplněk režim spánku nikdy sám nevypíná. Chová se stejně jako vždycky: 
 
 Doplněk přidává do dialogu Nastavení NVDA (menu NVDA, Možnosti, Nastavení) kategorii **Automatický režim spánku**. Obsahuje:
 
-* **Aplikace k uspání** – aplikace, které NVDA uspí. Na začátku je seznam prázdný. Aplikace, která právě běží, je uvedena pod názvem svého okna, stejně jako ve **Spuštěných aplikacích** níže; aplikace, která neběží, žádné okno nemá, a je proto uvedena pod názvem svého spustitelného souboru.
+* **Aplikace k uspání** – aplikace, které NVDA uspí. Na začátku je seznam prázdný. Aplikace, která právě běží, je uvedena pod názvem svého okna, stejně jako v **Dostupných aplikacích** níže; aplikace, která neběží, žádné okno nemá, a je proto uvedena pod názvem svého spustitelného souboru.
 * **Odstranit** – odebere ze seznamu aplikaci, na které právě jste. Pokud jich máte vybráno více, tlačítko se změní na **Odstranit vybrané** a odebere je všechny najednou.
-* **Spuštěné aplikace** – aplikace, které právě běží a zatím v seznamu nejsou, každá pod názvem svého okna. Jsou tu jen aplikace, které mají vlastní okno, tedy totéž, co vám nabízí přepínač úloh; procesy běžící na pozadí, které na obrazovku nikdy nic nevykreslí, se do seznamu nedostanou. Aplikace, jejíž okno žádný název nemá – což se u celoobrazovkové samoozvučené hry může klidně stát – je uvedena pod názvem svého spustitelného souboru.
-* **Přidat** – přidá do seznamu aplikaci, na které právě jste. Pokud jich máte vybráno více, tlačítko se změní na **Přidat vybrané** a přidá je všechny najednou. Přidaná aplikace ze **Spuštěných aplikací** zmizí a znovu se v nich objeví, jakmile ji z **Aplikací k uspání** odeberete.
+* **Dostupné aplikace** – aplikace, které právě běží a zatím v seznamu nejsou, každá pod názvem svého okna. Jsou tu jen aplikace, které mají vlastní okno, tedy totéž, co vám nabízí přepínač úloh; procesy běžící na pozadí, které na obrazovku nikdy nic nevykreslí, se do seznamu nedostanou. Aplikace, jejíž okno žádný název nemá – což se u celoobrazovkové samoozvučené hry může klidně stát – je uvedena pod názvem svého spustitelného souboru.
+* **Přidat** – přidá do seznamu aplikaci, na které právě jste. Pokud jich máte vybráno více, tlačítko se změní na **Přidat vybrané** a přidá je všechny najednou. Přidaná aplikace z **Dostupných aplikací** zmizí a znovu se v nich objeví, jakmile ji z **Aplikací k uspání** odeberete.
 * **Přidávat ručně uspané aplikace do seznamu pro automatické uspání** – ve výchozím stavu vypnuto. Když je zapnuto, každá aplikace, kterou uspíte ručně klávesou NVDA+shift+s, se do seznamu přidá a od té chvíle se bude uspávat sama.
 * **Odebírat ručně probuzené aplikace ze seznamu pro automatické uspání** – ve výchozím stavu vypnuto; je to zrcadlový protějšek předchozí volby. Když je zapnuto, probuzení aplikace ručně klávesou NVDA+shift+s ji zároveň ze seznamu odebere, takže se přestane uspávat sama. Aplikace, která v seznamu nikdy nebyla, zůstane beze změny.
+
+Aplikace, ve které je NVDA uspáno ve chvíli, kdy se dialog vykresluje, je uvedena s příznakem **(uspáno)** za názvem, a to v obou seznamech. V **Aplikacích k uspání** jde obvykle o práci samotného doplňku, kterou vám takto hlásí zpět. V **Dostupných aplikacích** jde o aplikaci, kterou jste uspali ručně klávesou NVDA+shift+s a do seznamu ji nepřidali – což stojí za vidění, pokud jste ji přidat chtěli, obzvlášť když je volba **Přidávat ručně uspané aplikace do seznamu pro automatické uspání** vypnutá a nic jiného vám to neřekne. Příznak je momentka pořízená při otevření kategorie a během toho, co máte dialog před sebou, se už nemění.
 
 Obě volby jsou na sobě nezávislé. Kterákoli z nich může být zapnutá bez té druhé a zapnout obě má rovněž smysl: seznam pak sleduje vaše používání klávesy NVDA+shift+s v obou směrech – roste, jak aplikace umlčujete, a zmenšuje se, jak je necháváte zase mluvit.
 
@@ -37,7 +40,8 @@ Dokud nestisknete OK nebo Použít, nic se nezmění; tlačítko Zrušit ponech�
 ## Poznámky
 
 * Ukládá se a porovnává název, pod kterým aplikaci zná NVDA, tedy název spustitelného souboru bez přípony – `firefox`, `notepad`, `explorer`. Seznamy přes něj zobrazují název okna aplikace, kdykoli nějaké má, protože to je název, který na aplikaci vidíte; je to ale jen popisek: uspává se celá aplikace, a ne jen to jedno okno, jehož název je zrovna vidět. Názvy oken se navíc při práci mění, takže tatáž aplikace může být zítra v seznamu uvedena pod jiným.
-* Samotné NVDA je ze **Spuštěných aplikací** záměrně vynecháno. Uspání NVDA v jeho vlastních oknech by jen umlčelo jeho vlastní rozhraní.
+* U několika málo aplikací se příznak uspání objeví, aniž byste je kdy uspali. NVDA obsahuje aplikační moduly pro několik samoozvučených programů, které si režim spánku zapínají samy, a příznak hlásí skutečný stav, ne jen to, co jste udělali vy nebo doplněk. Takovou aplikaci není třeba do **Aplikací k uspání** přidávat; ticho v ní je i tak.
+* Samotné NVDA je z **Dostupných aplikací** záměrně vynecháno. Uspání NVDA v jeho vlastních oknech by jen umlčelo jeho vlastní rozhraní.
 * Seznam patří k vašemu konfiguračnímu profilu, takže každý profil může mít vlastní sadu aplikací. Stejně jako každé jiné nastavení NVDA se na disk zapíše, když NVDA ukládá konfiguraci, ať už na vyžádání, nebo při ukončení.
 * Aplikace, která je v popředí při spuštění NVDA, se rovněž jednou zkontroluje, takže z aplikace, ve které jste už byli, není nutné odejít a vrátit se do ní.
 

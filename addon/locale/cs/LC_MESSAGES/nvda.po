@@ -5,10 +5,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
-"Report-Msgid-Bugs-To: nvda-translations@groups.io\n"
-"POT-Creation-Date: 2026-08-21 20:45+0200\n"
-"PO-Revision-Date: 2026-08-21 20:45+0200\n"
-"Last-Translator: 4Sense Gaming <lukas@4sensegaming.cz>\n"
+"POT-Creation-Date: 2026-08-22 18:24+0200\n"
+"PO-Revision-Date: 2026-08-22 18:24+0200\n"
+"Last-Translator: Lukáš Hosnedl <lukas@4sensegaming.cz>\n"
 "Language-Team: Czech\n"
 "Language: cs\n"
 "MIME-Version: 1.0\n"
@@ -25,42 +24,49 @@ msgid "Autosleep Mode"
 msgstr "Automatický režim spánku"
 
 #. Translators: the label of the list of applications that are put to sleep automatically.
-#: addon\globalPlugins\autosleepMode\settings.py:82
+#: addon\globalPlugins\autosleepMode\settings.py:83
 msgid "Apps to sleep"
 msgstr "Aplikace k uspání"
 
-#. Translators: the label of the list of applications that are running now.
-#: addon\globalPlugins\autosleepMode\settings.py:90
-msgid "Running apps"
-msgstr "Spuštěné aplikace"
+#. Translators: the label of the list of applications that are running now and
+#. can be added to the autosleep list.
+#: addon\globalPlugins\autosleepMode\settings.py:93
+msgid "Available apps"
+msgstr "Dostupné aplikace"
 
 #. Translators: an option to grow the list from the applications slept by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:99
-msgid "Add apps that are put to sleep manually to the autosleep list"
+#: addon\globalPlugins\autosleepMode\settings.py:102
+msgid "Add apps with manually activated sleep mode to the autosleep list"
 msgstr "Přidávat ručně uspané aplikace do seznamu pro automatické uspání"
 
 #. Translators: an option to shrink the list by the applications woken by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:108
+#: addon\globalPlugins\autosleepMode\settings.py:111
 msgid "Remove manually woken apps from the autosleep list"
 msgstr "Odebírat ručně probuzené aplikace ze seznamu pro automatické uspání"
 
+#. Translators: how an application NVDA is currently asleep in is shown in
+#. both lists of applications. {app} is the name of the application.
+#: addon\globalPlugins\autosleepMode\settings.py:229
+msgid "{app} (sleeping)"
+msgstr "{app} (uspáno)"
+
 #. Translators: the button that takes several selected applications off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:281
+#: addon\globalPlugins\autosleepMode\settings.py:353
 msgid "Remove selected"
 msgstr "Odstranit vybrané"
 
 #. Translators: the button that takes the current application off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:283
+#: addon\globalPlugins\autosleepMode\settings.py:355
 msgid "Remove"
 msgstr "Odstranit"
 
 #. Translators: the button that puts several selected applications on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:288
+#: addon\globalPlugins\autosleepMode\settings.py:360
 msgid "Add selected"
 msgstr "Přidat vybrané"
 
 #. Translators: the button that puts the current application on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:290
+#: addon\globalPlugins\autosleepMode\settings.py:362
 msgid "Add"
 msgstr "Přidat"
 
@@ -70,7 +76,7 @@ msgid ""
 "listed comes to the foreground."
 msgstr ""
 "Automaticky zapne režim spánku NVDA vždy, když se do popředí dostane některá "
-"z aplikací ve vašem seznamu."
+"z vybraných aplikací."
 
 #. Brief changelog for this version
 #. Translators: what's new content for the add-on version to be shown in the add-on store
