@@ -1,14 +1,14 @@
 # Autosleep Mode NVDA Add-on
 # Copyright (C) 2026 Lukáš Hosnedl
 # This file is distributed under the same license as the add-on package.
-# FIRST AUTHOR <lukas@4sensegaming.cz>, 2026.
+# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
 #
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
 "POT-Creation-Date: 2026-08-22 18:47+0200\n"
-"Last-Translator: Lukáš Hosnedl <lukas@4sensegaming.cz>\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: \n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"

@@ -92,6 +92,12 @@ def normalizeGettextHeader(potFile: Path, addonInfo: dict) -> None:
 	Only the header is touched; the messages below it are xgettext's own work and
 	are left exactly as they were found. The creation date is carried over rather
 	than rewritten, being the one field only xgettext is in a position to know.
+
+	The fields describing the package are filled in, and the fields describing the
+	translator are deliberately not: a pot is a template that has not been
+	translated by anybody, and each po fills those in with whoever translated it.
+	Putting a name in them here would only have every translation start out
+	claiming to be that person's work.
 	"""
 	from datetime import date
 
@@ -106,19 +112,16 @@ def normalizeGettextHeader(potFile: Path, addonInfo: dict) -> None:
 	end = text.find(separator)
 	body = text[end + len(separator) :] if end != -1 else ""
 
-	author = addonInfo["addon_author"]
-	parts = _authorParts.match(author)
-	authorName = parts["name"] if parts else author
-	authorEmail = parts["email"] if parts else "EMAIL@ADDRESS"
+	parts = _authorParts.match(addonInfo["addon_author"])
+	authorName = parts["name"] if parts else addonInfo["addon_author"]
 	creationDate = _potCreationDate.search(text)
-	year = date.today().year
 	header = [
 		f"# {addonInfo['addon_summary']} NVDA Add-on",
-		f"# Copyright (C) {year} {authorName}",
+		f"# Copyright (C) {date.today().year} {authorName}",
 		"# This file is distributed under the same license as the add-on package.",
-		# Left as gettext's placeholder for whoever translates: a po file starts as a
-		# copy of this pot, and this is the line the translator puts their name on.
-		f"# FIRST AUTHOR <{authorEmail}>, {year}.",
+		# Gettext's placeholder, left alone: this line credits the translator, and a
+		# pot has not been translated by anyone. It is filled in by each po.
+		"# FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.",
 		"#",
 		# The header of a pot is marked fuzzy by convention, so that a po copied from
 		# it does not pass its placeholder values off as a finished translation.
@@ -127,7 +130,9 @@ def normalizeGettextHeader(potFile: Path, addonInfo: dict) -> None:
 		'msgstr ""',
 		f'"Project-Id-Version: {addonInfo["addon_name"]} {addonInfo["addon_version"]}\\n"',
 		creationDate.group(0) if creationDate else '"POT-Creation-Date: \\n"',
-		f'"Last-Translator: {author}\\n"',
+		# A translator field like the credit line above, and a placeholder for the
+		# same reason. msgmerge never copies it over a po that has a real one.
+		'"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"',
 		'"Language: \\n"',
 		'"MIME-Version: 1.0\\n"',
 		'"Content-Type: text/plain; charset=UTF-8\\n"',
