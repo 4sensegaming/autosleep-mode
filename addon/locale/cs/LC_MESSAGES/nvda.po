@@ -1,6 +1,7 @@
 # Autosleep Mode: Czech translation.
 # Copyright (C) 2026 Lukáš Hosnedl
 # This file is distributed under the same license as the add-on.
+# Lukáš Hosnedl <lukas@4sensegaming.cz>, 2026.
 #
 msgid ""
 msgstr ""
