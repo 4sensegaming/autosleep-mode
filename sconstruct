@@ -130,9 +130,13 @@ def normalizeGettextHeader(potFile: Path, addonInfo: dict) -> None:
 		'msgstr ""',
 		f'"Project-Id-Version: {addonInfo["addon_name"]} {addonInfo["addon_version"]}\\n"',
 		creationDate.group(0) if creationDate else '"POT-Creation-Date: \\n"',
-		# A translator field like the credit line above, and a placeholder for the
-		# same reason. msgmerge never copies it over a po that has a real one.
+		# Translator fields, like the credit line above, and placeholders for the same
+		# reason. They are kept rather than dropped so that a po started from this
+		# template shows the translator every field there is to fill in; msgmerge
+		# never copies one of these over a po that has a real value.
+		'"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\\n"',
 		'"Last-Translator: FULL NAME <EMAIL@ADDRESS>\\n"',
+		'"Language-Team: LANGUAGE <LL@li.org>\\n"',
 		'"Language: \\n"',
 		'"MIME-Version: 1.0\\n"',
 		'"Content-Type: text/plain; charset=UTF-8\\n"',
