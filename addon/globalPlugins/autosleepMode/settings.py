@@ -48,6 +48,11 @@ _TOWARDS_THE_BOTTOM = frozenset(
 	(wx.WXK_DOWN, wx.WXK_PAGEDOWN, wx.WXK_END, wx.WXK_NUMPAD_DOWN, wx.WXK_NUMPAD_PAGEDOWN, wx.WXK_NUMPAD_END),
 )
 
+#: The keys that ask for the selected applications to be taken off the autosleep
+#: list, which is what the Remove button does. The numeric keypad sends its own
+#: code for this one as well when Num Lock is off.
+_REMOVES = frozenset((wx.WXK_DELETE, wx.WXK_NUMPAD_DELETE))
+
 #: Messages and styles for switching a list view's own tooltip off. A list view
 #: pops one up to show the whole of an item whose text is wider than the column,
 #: and a screen reader announces it, so a long window title is read out a second
@@ -80,17 +85,18 @@ class AutosleepSettingsPanel(SettingsPanel):
 			sHelper,
 			settingsSizer,
 			# Translators: the label of the list of applications that are put to sleep automatically.
-			_("Apps to sleep"),
+			_("Apps to &sleep"),
 		)
 		self.removeButton = sHelper.addItem(wx.Button(self, label=self._removeLabel(1)))
 		self.removeButton.Bind(wx.EVT_BUTTON, self._onRemove)
+		self.removeButton.Bind(wx.EVT_KEY_DOWN, self._onRemoveKeyDown)
 
 		self.runningList = self._addAppList(
 			sHelper,
 			settingsSizer,
 			# Translators: the label of the list of applications that are running now and
 			# can be added to the autosleep list.
-			_("Available apps"),
+			_("A&vailable apps"),
 		)
 		self.addButton = sHelper.addItem(wx.Button(self, label=self._addLabel(1)))
 		self.addButton.Bind(wx.EVT_BUTTON, self._onAdd)
@@ -99,7 +105,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 			wx.CheckBox(
 				self,
 				# Translators: an option to grow the list from the applications slept by hand.
-				label=_("Add apps with manually activated sleep mode to the autosleep list"),
+				label=_("Add apps with &manually activated sleep mode to the autosleep list"),
 			),
 		)
 		self.addManuallySleptCheckBox.SetValue(addonConfig.getAddManuallySleptApps())
@@ -108,7 +114,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 			wx.CheckBox(
 				self,
 				# Translators: an option to shrink the list by the applications woken by hand.
-				label=_("Remove manually woken apps from the autosleep list"),
+				label=_("Remove &manually woken apps from the autosleep list"),
 			),
 		)
 		self.removeManuallyWokenCheckBox.SetValue(addonConfig.getRemoveManuallyWokenApps())
@@ -300,7 +306,12 @@ class AutosleepSettingsPanel(SettingsPanel):
 		(emptied if emptied.GetItemCount() else other).SetFocus()
 
 	def _onListKeyDown(self, evt: wx.KeyEvent):
-		"""Drop a navigation key that has nowhere to go.
+		"""Press the Remove button, or drop a navigation key that has nowhere to go.
+
+		Delete is what a list of things one can take away is expected to answer to,
+		and on the autosleep list it does exactly what the Remove button does, on
+		exactly the applications the button would have acted on. The other list has
+		nothing to remove from, so there it is left alone.
 
 		Home on the first item, and End on the last, leave the item the user is on
 		exactly where it was, but the list view still reports a selection for it,
@@ -313,10 +324,22 @@ class AutosleepSettingsPanel(SettingsPanel):
 		are dropped on the same terms even though the list view already ignores
 		them quietly, so that the rule is one rule.
 		"""
+		if evt.GetEventObject() is self.sleepList and self._removes(evt):
+			self._onRemove(evt)
+			return
 		if self._movesNothing(evt):
 			# Deliberately not skipped: skipping is what passes the key on.
 			return
 		evt.Skip()
+
+	def _removes(self, evt: wx.KeyEvent) -> bool:
+		"""Whether this key is asking for the Remove button.
+
+		Only a key pressed on its own, as with the navigation keys: Delete with a
+		modifier held down means something else wherever Windows uses it, and the
+		add-on has no business claiming those combinations for itself.
+		"""
+		return evt.GetModifiers() == wx.MOD_NONE and evt.GetKeyCode() in _REMOVES
 
 	def _movesNothing(self, evt: wx.KeyEvent) -> bool:
 		"""Whether this key would leave the list exactly as it is.
@@ -350,16 +373,16 @@ class AutosleepSettingsPanel(SettingsPanel):
 	def _removeLabel(self, selectionCount: int) -> str:
 		if selectionCount > 1:
 			# Translators: the button that takes several selected applications off the autosleep list.
-			return _("Remove selected")
+			return _("&Remove selected")
 		# Translators: the button that takes the current application off the autosleep list.
-		return _("Remove")
+		return _("&Remove")
 
 	def _addLabel(self, selectionCount: int) -> str:
 		if selectionCount > 1:
 			# Translators: the button that puts several selected applications on the autosleep list.
-			return _("Add selected")
+			return _("&Add selected")
 		# Translators: the button that puts the current application on the autosleep list.
-		return _("Add")
+		return _("&Add")
 
 	def _updateButtons(self):
 		"""Relabel each button for its list and switch it off for an empty one.
@@ -376,6 +399,19 @@ class AutosleepSettingsPanel(SettingsPanel):
 				button.SetLabel(newLabel)
 			button.Enable(listCtrl.GetItemCount() > 0)
 
+	def _onRemoveKeyDown(self, evt: wx.KeyEvent):
+		"""Let Delete on the Remove button press it.
+
+		The button is the other place the user can be standing when they mean to
+		take an application off the list, since that is where Tab from the list
+		leads, and Delete there does what pressing the button does rather than
+		nothing at all. Space and Enter are the button's own and are left to it.
+		"""
+		if self._removes(evt):
+			self._onRemove(evt)
+			return
+		evt.Skip()
+
 	def _onSelectionChanged(self, evt: wx.ListEvent):
 		# Refilling a list selects and focuses items of its own accord; those are
 		# not the user changing their mind and the buttons are updated once at the
@@ -384,7 +420,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 			self._updateButtons()
 		evt.Skip()
 
-	def _onRemove(self, evt: wx.CommandEvent):
+	def _onRemove(self, evt: wx.Event):
 		chosen = self._selectedIndices(self.sleepList)
 		if not chosen:
 			return
