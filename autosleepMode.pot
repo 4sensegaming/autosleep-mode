@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
-"POT-Creation-Date: 2026-08-22 22:00+0200\n"
+"POT-Creation-Date: 2026-08-23 09:27+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -23,7 +23,7 @@ msgstr ""
 #. Translators: Summary/title for this add-on
 #. to be shown on installation and add-on information found in add-on store
 #: addon\globalPlugins\autosleepMode\settings.py:66
-#: addon\globalPlugins\autosleepMode\__init__.py:36 buildVars.py:21
+#: addon\globalPlugins\autosleepMode\__init__.py:37 buildVars.py:21
 msgid "Autosleep Mode"
 msgstr ""
 
@@ -77,8 +77,15 @@ msgstr ""
 
 #. Translators: the description of the command that opens the add-on's
 #. settings, shown in the Input gestures dialog.
-#: addon\globalPlugins\autosleepMode\__init__.py:60
+#: addon\globalPlugins\autosleepMode\__init__.py:61
 msgid "Displays autosleep mode settings"
+msgstr ""
+
+#. Translators: announced right after NVDA's own "Sleep mode on" or
+#. "Sleep mode off" when that toggle has just put the application on the
+#. autosleep list or taken it off it.
+#: addon\globalPlugins\autosleepMode\__init__.py:181
+msgid "Saved"
 msgstr ""
 
 #: buildVars.py:25

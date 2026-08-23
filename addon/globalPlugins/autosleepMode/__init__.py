@@ -7,7 +7,7 @@
 
 """The global plugin: it watches for foreground changes, registers the settings
 panel and the command that opens it, and notices when the user switches sleep
-mode on by hand.
+mode on or off by hand.
 """
 
 import addonHandler
@@ -18,6 +18,7 @@ import globalPluginHandler
 import gui
 import queueHandler
 import speech
+import ui
 import wx
 from gui.settingsDialogs import NVDASettingsDialog
 from logHandler import log
@@ -157,12 +158,24 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		nothing when it does: such an application is on the list by definition, so
 		there is nothing left to add. The add-on never switches sleep mode off, so
 		the other way round is always the user's own doing.
+
+		A list that has actually grown or shrunk is said out loud. The
+		announcement is made the way NVDA makes its own, and it is queued rather
+		than spoken at once, so that it follows NVDA's "Sleep mode on" or "Sleep
+		mode off" and the two are heard as one. Nothing is said when the list was
+		already as the toggle would leave it, so that the word means what it says.
 		"""
 		appModule = api.getFocusObject().appModule
 		if appModule is None or not appModule.appName:
 			return
 		if appModule.sleepMode:
-			if addonConfig.getAddManuallySleptApps():
-				addonConfig.addApp(appModule.appName)
-		elif addonConfig.getRemoveManuallyWokenApps():
-			addonConfig.removeApp(appModule.appName)
+			listChanged = addonConfig.getAddManuallySleptApps() and addonConfig.addApp(appModule.appName)
+		else:
+			listChanged = addonConfig.getRemoveManuallyWokenApps() and addonConfig.removeApp(
+				appModule.appName
+			)
+		if listChanged:
+			# Translators: announced right after NVDA's own "Sleep mode on" or
+			# "Sleep mode off" when that toggle has just put the application on the
+			# autosleep list or taken it off it.
+			ui.message(_("Saved"))

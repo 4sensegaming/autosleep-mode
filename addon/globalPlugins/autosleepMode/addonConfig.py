@@ -99,20 +99,27 @@ def isListed(appName: str) -> bool:
 	return any(normalize(listed) == wanted for listed in getApps())
 
 
-def addApp(appName: str):
-	"""Add an application to the list, unless it is already there."""
+def addApp(appName: str) -> bool:
+	"""Add an application to the list, unless it is already there.
+
+	Returns whether the list was changed, so that a caller can tell an addition
+	from a name that was on the list all along.
+	"""
 	if isListed(appName):
-		return
+		return False
 	setApps(sorted(getApps() + [appName], key=normalize))
+	return True
 
 
-def removeApp(appName: str):
+def removeApp(appName: str) -> bool:
 	"""Take an application off the list, if it is on it.
 
 	Nothing is written when it is not, so that this cannot mark the configuration
-	as changed on an application the user never listed.
+	as changed on an application the user never listed. Returns whether the list
+	was changed.
 	"""
 	if not isListed(appName):
-		return
+		return False
 	wanted = normalize(appName)
 	setApps([listed for listed in getApps() if normalize(listed) != wanted])
+	return True
