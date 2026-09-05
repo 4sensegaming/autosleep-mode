@@ -79,6 +79,19 @@ _potCreationDate = re.compile(r'^"POT-Creation-Date:[^"]*"$', re.MULTILINE)
 _authorParts = re.compile(r"^(?P<name>.*?)\s*<(?P<email>[^>]*)>\s*$")
 
 
+def copyBaseReadme(target, source, env) -> None:
+	"""Copy the readme in the repository root into the doc directory of the base language.
+
+	That readme is also the one GitHub puts on the front page of the repository, so it
+	points at the translated readmes by their path from the root. A directory deeper,
+	alongside the translations themselves, the very same files are siblings, and the
+	links are moved to suit. Everything else is copied through untouched.
+	"""
+	text = Path(str(source[0])).read_text(encoding="utf-8")
+	text = text.replace(f"]({docsDir.as_posix()}/", "](../")
+	Path(str(target[0])).write_text(text, encoding="utf-8")
+
+
 def normalizeGettextHeader(potFile: Path, addonInfo: dict) -> None:
 	"""Replace the header xgettext writes on a pot with the one this add-on wants.
 
@@ -226,7 +239,11 @@ if (cssFile := Path("style.css")).is_file():
 
 if (readmeFile := Path("readme.md")).is_file():
 	readmePath = docsDir / buildVars.baseLanguage / readmeFile
-	readmeTarget = env.Command(str(readmePath), str(readmeFile), Copy("$TARGET", "$SOURCE"))
+	readmeTarget = env.Command(
+		str(readmePath),
+		str(readmeFile),
+		Action(copyBaseReadme, "Copying $SOURCE to $TARGET"),
+	)
 	env.Depends(addon, readmeTarget)
 
 for mdFile in env.Glob(docsDir/"*/*.md"):

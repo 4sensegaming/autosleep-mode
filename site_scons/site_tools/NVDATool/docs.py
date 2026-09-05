@@ -1,10 +1,17 @@
 
 import gettext
+import re
 from pathlib import Path
 
 import markdown
+from markdown.extensions.toc import slugify_unicode
 
 from .typings import AddonInfo
+
+
+#: An href pointing at a markdown file next to this one, with any fragment it carries.
+#: Anything with a scheme in front of it is somebody else's document and is left alone.
+RELATIVE_MD_LINK = re.compile(r'(href="(?!\w+:)[^"]+)\.md(#[^"]*)?"')
 
 
 
@@ -41,7 +48,19 @@ def md2html(
 		mdText = f.read()
 	for k, v in headerDic.items():
 		mdText = mdText.replace(k, v, 1)
-	htmlText = markdown.markdown(mdText, extensions=mdExtensions)
+	# GitHub renders these very markdown files as well, and slugs its heading anchors
+	# without stripping diacritics, so the toc extension is asked to keep them too.
+	# A link such as (#nastavení) would otherwise have to be spelt one way for GitHub
+	# and another for the html shipped with the add-on. Configuration for an extension
+	# that is not loaded is ignored, so this stays inert if toc is taken out again.
+	htmlText = markdown.markdown(
+		mdText,
+		extensions=mdExtensions,
+		extension_configs={"toc": {"slugify": slugify_unicode}},
+	)
+	# The readmes link to one another by their markdown names, which is what GitHub
+	# needs. Here it is the generated html that sits next to them, so the links follow.
+	htmlText = RELATIVE_MD_LINK.sub(lambda m: f'{m[1]}.html{m[2] or ""}"', htmlText)
 	# Optimization: build resulting HTML text in one go instead of writing parts separately.
 	docText = "\n".join(
 		(

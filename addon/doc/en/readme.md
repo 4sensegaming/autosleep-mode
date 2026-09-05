@@ -1,6 +1,6 @@
 # Autosleep Mode
 
-**English** | [Čeština](addon/doc/cs/readme.md) | [Deutsch](addon/doc/de/readme.md) | [Italiano](addon/doc/it/readme.md) | [Slovenčina](addon/doc/sk/readme.md)
+**English** | [Čeština](../cs/readme.md) | [Deutsch](../de/readme.md) | [Italiano](../it/readme.md) | [Slovenčina](../sk/readme.md)
 
 * Author: Lukáš Hosnedl
 * Minimum NVDA version: 2026.1
