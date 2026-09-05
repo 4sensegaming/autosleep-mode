@@ -11,12 +11,17 @@ configuration. Nothing here ever calls ``config.conf.save()``: a change reaches
 the disk only when NVDA itself saves, on request or on exit, exactly like every
 other NVDA setting.
 
+No setter writes a value that is already stored, and each one says whether it
+wrote. Putting a value back unchanged would mark the configuration as needing to
+be saved over a change that is not one, and the return value is what lets a
+caller tell a real change from a request that came to nothing.
+
 Every read goes to NVDA's live configuration rather than to a cached copy, so a
 profile switch takes effect immediately with no further bookkeeping. All of this
 belongs on NVDA's main thread.
 """
 
-from typing import List
+from collections.abc import Iterable
 
 import config
 
@@ -51,7 +56,23 @@ def normalize(appName: str) -> str:
 	return appName.strip().lower()
 
 
-def getApps() -> List[str]:
+def _getBool(key: str) -> bool:
+	"""One of our boolean options, or C{False} if the section is not there yet."""
+	try:
+		return bool(config.conf[CONF_SECTION][key])
+	except (KeyError, TypeError):
+		return False
+
+
+def _setBool(key: str, value: bool) -> bool:
+	"""Store one of our boolean options. Returns whether it was changed."""
+	if _getBool(key) == value:
+		return False
+	config.conf[CONF_SECTION][key] = value
+	return True
+
+
+def getApps() -> list[str]:
 	"""The application names that should be put to sleep, as stored.
 
 	A copy is returned: the list NVDA hands back is the one it caches, and
@@ -64,33 +85,36 @@ def getApps() -> List[str]:
 		return []
 
 
-def setApps(apps):
-	"""Replace the list of application names to put to sleep."""
-	config.conf[CONF_SECTION]["apps"] = list(apps)
+def setApps(apps: Iterable[str]) -> bool:
+	"""Replace the list of application names to put to sleep.
+
+	Returns whether the list was changed.
+	"""
+	apps = list(apps)
+	if apps == getApps():
+		return False
+	config.conf[CONF_SECTION]["apps"] = apps
+	return True
 
 
 def getAddManuallySleptApps() -> bool:
 	"""Whether an application slept by hand joins the list automatically."""
-	try:
-		return config.conf[CONF_SECTION]["addManuallySleptApps"]
-	except (KeyError, TypeError):
-		return False
+	return _getBool("addManuallySleptApps")
 
 
-def setAddManuallySleptApps(value: bool):
-	config.conf[CONF_SECTION]["addManuallySleptApps"] = value
+def setAddManuallySleptApps(value: bool) -> bool:
+	"""Store L{getAddManuallySleptApps}. Returns whether it was changed."""
+	return _setBool("addManuallySleptApps", value)
 
 
 def getRemoveManuallyWokenApps() -> bool:
 	"""Whether an application woken by hand leaves the list automatically."""
-	try:
-		return config.conf[CONF_SECTION]["removeManuallyWokenApps"]
-	except (KeyError, TypeError):
-		return False
+	return _getBool("removeManuallyWokenApps")
 
 
-def setRemoveManuallyWokenApps(value: bool):
-	config.conf[CONF_SECTION]["removeManuallyWokenApps"] = value
+def setRemoveManuallyWokenApps(value: bool) -> bool:
+	"""Store L{getRemoveManuallyWokenApps}. Returns whether it was changed."""
+	return _setBool("removeManuallyWokenApps", value)
 
 
 def isListed(appName: str) -> bool:
@@ -105,10 +129,11 @@ def addApp(appName: str) -> bool:
 	Returns whether the list was changed, so that a caller can tell an addition
 	from a name that was on the list all along.
 	"""
-	if isListed(appName):
+	apps = getApps()
+	wanted = normalize(appName)
+	if any(normalize(listed) == wanted for listed in apps):
 		return False
-	setApps(sorted(getApps() + [appName], key=normalize))
-	return True
+	return setApps(sorted(apps + [appName], key=normalize))
 
 
 def removeApp(appName: str) -> bool:
@@ -118,8 +143,5 @@ def removeApp(appName: str) -> bool:
 	as changed on an application the user never listed. Returns whether the list
 	was changed.
 	"""
-	if not isListed(appName):
-		return False
 	wanted = normalize(appName)
-	setApps([listed for listed in getApps() if normalize(listed) != wanted])
-	return True
+	return setApps([listed for listed in getApps() if normalize(listed) != wanted])

@@ -15,17 +15,23 @@ The test applied here is the one the task switcher applies, and the cloaking tes
 is the part of it that matters most. Each surviving window is then turned into the
 title it shows the user and the name NVDA would give its process, the latter being
 the string the add-on matches against the list of applications to put to sleep.
+
+The whole of this runs while the settings dialog waits to be drawn, so the two
+questions that are not cheap are asked as sparingly as the answer allows: whether
+the compositor is hiding a window, which is put to another process and answered
+back, and what NVDA calls a process, which NVDA works out by walking a snapshot of
+every process on the system.
 """
 
 import ctypes
 from ctypes.wintypes import RECT
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple
 
 import appModuleHandler
 import globalVars
 import winUser
 from logHandler import log
-from winBindings.user32 import EnumChildWindows, EnumWindows, GetWindowRect, WNDENUMPROC
+from winBindings.user32 import WNDENUMPROC, EnumChildWindows, EnumWindows, GetWindowRect
 
 from . import dwm
 
@@ -67,14 +73,14 @@ class RunningApp(NamedTuple):
 	sleeping: bool
 
 
-def _topLevelWindows() -> List[int]:
+def _topLevelWindows() -> list[int]:
 	"""Every top level window there is, front to back.
 
 	The order is the one the window manager keeps them in, so an application's
 	frontmost window is the first of its windows to come past. That is the window
 	whose title is worth showing.
 	"""
-	windows: List[int] = []
+	windows: list[int] = []
 
 	@WNDENUMPROC
 	def collect(hwnd: int, _lParam: int) -> int:
@@ -83,19 +89,6 @@ def _topLevelWindows() -> List[int]:
 		return 1
 
 	EnumWindows(collect, 0)
-	return windows
-
-
-def _childWindows(hwnd: int) -> List[int]:
-	"""Every window inside C{hwnd}, however deeply nested."""
-	windows: List[int] = []
-
-	@WNDENUMPROC
-	def collect(child: int, _lParam: int) -> int:
-		windows.append(child)
-		return 1
-
-	EnumChildWindows(hwnd, collect, 0)
 	return windows
 
 
@@ -114,7 +107,7 @@ def _hasArea(hwnd: int) -> bool:
 	return rect.right > rect.left and rect.bottom > rect.top
 
 
-def _isDrawnWindow(hwnd: int) -> bool:
+def _isDrawnWindow(hwnd: int, drawn: dict[int, bool]) -> bool:
 	"""Whether this window is one the user can actually see.
 
 	Between them these are the conditions that separate a window on the screen
@@ -123,21 +116,33 @@ def _isDrawnWindow(hwnd: int) -> bool:
 	- it has to be shown rather than hidden;
 	- it must not be a tool window, the style meant for the palettes and helpers an
 	  application keeps beside its real windows;
-	- it must not be cloaked, which is the state Windows leaves the windows of a
+	- it has to occupy some of the screen;
+	- and it must not be cloaked, which is the state Windows leaves the windows of a
 	  suspended packaged application in, and the reason the application frame host
-	  was offered as something to put to sleep;
-	- and it has to occupy some of the screen.
+	  was offered as something to put to sleep.
+
+	Cloaking is asked about last although it is the condition that matters most,
+	because it is the only one of the four that is not a cheap look at the window:
+	it is a question put to the compositor in another process and answered back.
+	Every window one of the tests before it rules out is a question never asked.
+
+	C{drawn} remembers the answers for the length of one scan. A window that owns
+	others is asked about once on its own account and again for each window it
+	owns, and there is no reason to pay the compositor twice over for one window.
 	"""
-	if not winUser.isWindowVisible(hwnd):
-		return False
-	if winUser.getExtendedWindowStyle(hwnd) & winUser.WS_EX_TOOLWINDOW:
-		return False
-	if dwm.isCloaked(hwnd):
-		return False
-	return _hasArea(hwnd)
+	if hwnd in drawn:
+		return drawn[hwnd]
+	answer = bool(
+		winUser.isWindowVisible(hwnd)
+		and not winUser.getExtendedWindowStyle(hwnd) & winUser.WS_EX_TOOLWINDOW
+		and _hasArea(hwnd)
+		and not dwm.isCloaked(hwnd)
+	)
+	drawn[hwnd] = answer
+	return answer
 
 
-def _hasDrawnOwner(hwnd: int) -> bool:
+def _hasDrawnOwner(hwnd: int, drawn: dict[int, bool]) -> bool:
 	"""Whether this window belongs to another window that is itself on the screen.
 
 	A window that does is a dialog, or something else an application has put up
@@ -158,20 +163,20 @@ def _hasDrawnOwner(hwnd: int) -> bool:
 	for _step in range(MAX_OWNER_DEPTH):
 		if not owner:
 			return False
-		if _isDrawnWindow(owner):
+		if _isDrawnWindow(owner, drawn):
 			return True
 		owner = winUser.getWindow(owner, winUser.GW_OWNER)
-	log.debugWarning("Gave up walking the owners of window %r" % hwnd)
+	log.debugWarning(f"Gave up walking the owners of window {hwnd!r}")
 	return False
 
 
-def _isSwitchableWindow(hwnd: int) -> bool:
+def _isSwitchableWindow(hwnd: int, drawn: dict[int, bool]) -> bool:
 	"""Whether this window is the one its application should be named after.
 
 	That is a window the user can see which is not subordinate to another window
 	the user can see.
 	"""
-	return _isDrawnWindow(hwnd) and not _hasDrawnOwner(hwnd)
+	return _isDrawnWindow(hwnd, drawn) and not _hasDrawnOwner(hwnd, drawn)
 
 
 def _processId(hwnd: int) -> int:
@@ -182,20 +187,31 @@ def _title(hwnd: int) -> str:
 	return winUser.getWindowText(hwnd).strip()
 
 
-def _isAsleep(processId: int) -> bool:
-	"""Whether NVDA's sleep mode is on for the application behind this process.
+def _identify(processId: int, namesByProcessId: dict[int, str]) -> tuple[str, bool]:
+	"""What NVDA calls this process, and whether NVDA is asleep in it.
 
-	Only the app modules NVDA has made already are consulted. Asking for one that
-	does not exist yet would build it, and building an app module for every window
-	on the system is both a real cost and no help: sleep mode is a state kept on
-	the app module, so an application NVDA has never made one for cannot have been
+	Both answers live on the app module, so where NVDA has made one already it is
+	asked for both and neither has to be worked out. Only the app modules that
+	exist are consulted: asking for one that does not would build it, and building
+	an app module for every window on the system is a real cost and no help. That
+	is the whole of the second answer as well, since sleep mode is a state kept on
+	the app module and an application NVDA has never made one for cannot have been
 	put to sleep either.
+
+	Where there is no app module the name has to be worked out instead, and NVDA
+	does that by walking a snapshot of every process on the system. Those answers
+	are remembered in C{namesByProcessId}, so a process is asked about once
+	however many windows it has.
 	"""
 	appModule = appModuleHandler.runningTable.get(processId)
-	return bool(appModule is not None and appModule.sleepMode)
+	if appModule is not None:
+		return appModule.appName, bool(appModule.sleepMode)
+	if processId not in namesByProcessId:
+		namesByProcessId[processId] = appModuleHandler.getAppNameFromProcessID(processId)
+	return namesByProcessId[processId], False
 
 
-def _coreWindowProcessIdsByTitle(windows: List[int]) -> Dict[str, int]:
+def _coreWindowProcessIdsByTitle(windows: list[int]) -> dict[str, int]:
 	"""The process behind each packaged application parked on the desktop, by title.
 
 	A minimised packaged application leaves its core window among the top level
@@ -203,7 +219,7 @@ def _coreWindowProcessIdsByTitle(windows: List[int]) -> Dict[str, int]:
 	only thing left tying the two together, and this is the index that lets a frame
 	be looked up in it.
 	"""
-	byTitle: Dict[str, int] = {}
+	byTitle: dict[str, int] = {}
 	for hwnd in windows:
 		if winUser.getClassName(hwnd) != CORE_WINDOW_CLASS:
 			continue
@@ -216,24 +232,39 @@ def _coreWindowProcessIdsByTitle(windows: List[int]) -> Dict[str, int]:
 	return byTitle
 
 
-def _hostedProcessId(hwnd: int, hostProcessId: int, coreWindows: Dict[str, int]) -> Optional[int]:
+def _hostedProcessId(hwnd: int, hostProcessId: int, coreWindows: dict[str, int]) -> int | None:
 	"""The process of the packaged application this frame shows, where it can be found.
 
 	While the application is on screen its core window is inside the frame and says
 	whose the frame is outright. Once the application is minimised that core window
 	has gone back to the desktop and the shared title is all there is left to go on,
 	so it is looked up there instead.
+
+	The walk over the frame's windows stops at the first core window that answers
+	the question. There is only ever the one, and the windows a frame keeps under
+	it are not worth walking to the end of to be told again what is already known.
 	"""
-	for child in _childWindows(hwnd):
+	hosted: list[int] = []
+
+	@WNDENUMPROC
+	def visit(child: int, _lParam: int) -> int:
 		if winUser.getClassName(child) != CORE_WINDOW_CLASS:
-			continue
+			# Keep going: this is not the window being looked for.
+			return 1
 		processId = _processId(child)
-		if processId and processId != hostProcessId:
-			return processId
+		if not processId or processId == hostProcessId:
+			return 1
+		hosted.append(processId)
+		# Stop: the application behind the frame has been found.
+		return 0
+
+	EnumChildWindows(hwnd, visit, 0)
+	if hosted:
+		return hosted[0]
 	return coreWindows.get(_title(hwnd))
 
 
-def runningApps() -> List[RunningApp]:
+def runningApps() -> list[RunningApp]:
 	"""The applications that have a window open now, ready to be listed.
 
 	One entry per application however many windows it has, titled after its
@@ -244,16 +275,17 @@ def runningApps() -> List[RunningApp]:
 	silence NVDA's own interface.
 	"""
 	windows = _topLevelWindows()
+	#: Whether each window looked at so far is one the user can see.
+	drawn: dict[int, bool] = {}
 	#: Built only if a packaged application turns up, since it costs a pass of its own.
-	coreWindows: Optional[Dict[str, int]] = None
-	#: NVDA resolves a name by walking a snapshot of every process on the system, so
-	#: each process is asked about once however many windows it has.
-	namesByProcessId: Dict[int, str] = {}
-	found: Dict[str, RunningApp] = {}
+	coreWindows: dict[str, int] | None = None
+	#: The names NVDA had to work out rather than have to hand.
+	namesByProcessId: dict[int, str] = {}
+	found: dict[str, RunningApp] = {}
 
 	for hwnd in windows:
 		try:
-			if not _isSwitchableWindow(hwnd):
+			if not _isSwitchableWindow(hwnd, drawn):
 				continue
 			processId = _processId(hwnd)
 			if winUser.getClassName(hwnd) == APP_FRAME_CLASS:
@@ -264,18 +296,20 @@ def runningApps() -> List[RunningApp]:
 				processId = _hostedProcessId(hwnd, processId, coreWindows) or processId
 			if not processId or processId == globalVars.appPid:
 				continue
-			if processId not in namesByProcessId:
-				namesByProcessId[processId] = appModuleHandler.getAppNameFromProcessID(processId)
-			appName = namesByProcessId[processId]
-			if not appName:
+			appName, sleeping = _identify(processId, namesByProcessId)
+			# The windows come front to back, so the first one seen for an
+			# application is its frontmost, and gives the title the user is most
+			# likely to know it by. Every later window of the same one is nothing
+			# to do but drop.
+			if not appName or appName in found:
 				continue
 			title = _title(hwnd)
-			sleeping = _isAsleep(processId)
-		except Exception:
-			log.debugWarning("Error examining window %r" % hwnd, exc_info=True)
+		# Deliberately anything at all: these are other processes' windows, they can
+		# be closed halfway through being looked at, and one window that cannot be
+		# examined is no reason to hand the user an empty list.
+		except Exception:  # noqa: BLE001
+			log.debugWarning(f"Error examining window {hwnd!r}", exc_info=True)
 			continue
-		# The windows come front to back, so the first one seen for an application
-		# is its frontmost, and gives the title the user is most likely to know it by.
-		found.setdefault(appName, RunningApp(appName, title or appName, sleeping))
+		found[appName] = RunningApp(appName, title or appName, sleeping)
 
 	return sorted(found.values(), key=lambda app: (app.displayName.lower(), app.appName))

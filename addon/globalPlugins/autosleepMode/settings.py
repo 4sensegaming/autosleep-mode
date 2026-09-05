@@ -26,7 +26,8 @@ reports the item twice over, once as current and once as selected, and a screen
 reader reads it out twice and calls it "not selected" every time.
 """
 
-from typing import Dict, List, Sequence
+from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import addonHandler
 import winUser
@@ -34,8 +35,14 @@ import wx
 from gui import guiHelper
 from gui.settingsDialogs import SettingsPanel
 
-from . import addonConfig
-from . import apps
+from . import addonConfig, apps
+
+if TYPE_CHECKING:
+	# NVDA puts the translation lookup into this module's namespace at run time,
+	# which a type checker reading the source has no way of knowing. This says what
+	# it will be; nothing is imported when the add-on is actually running, which is
+	# what the suppression below records.
+	from gettext import gettext as _  # noqa: TC004
 
 addonHandler.initTranslation()
 
@@ -65,21 +72,51 @@ _LVM_SETTOOLTIPS = _LVM_FIRST + 74
 _LVS_EX_INFOTIP = 0x00000400
 _LVS_EX_LABELTIP = 0x00004000
 
+#: How big a list asks to be before the panel is laid out. It is given all the
+#: width the panel can spare afterwards, so this is really the height, and the
+#: width it falls back on.
+_LIST_SIZE = (250, 150)
+
+#: What each button is called, singular and plural. A button is renamed as the
+#: selection it acts on grows past one and shrinks back again, so both names are
+#: needed at once.
+# Translators: the button that takes the current application off the autosleep list.
+_REMOVE = _("&Remove")
+# Translators: the button that takes several selected applications off the autosleep list.
+_REMOVE_SELECTED = _("&Remove selected")
+# Translators: the button that puts the current application on the autosleep list.
+_ADD = _("&Add")
+# Translators: the button that puts several selected applications on the autosleep list.
+_ADD_SELECTED = _("&Add selected")
+
 
 class AutosleepSettingsPanel(SettingsPanel):
 	# Translators: the title of the add-on's category in NVDA's Settings dialog.
 	title = _("Autosleep Mode")
 
+	#: The list of applications as it will be saved, edited in place until then.
+	_sleepApps: list[str]
+	#: Every application currently running, filled in by L{onPanelActivated}.
+	_runningApps: list[apps.RunningApp]
+	#: Set while a list is being refilled, so that the events that causes are not
+	#: mistaken for the user changing the selection.
+	_refreshing: bool
+	#: Each button with the list it acts on and the two names it goes by.
+	_buttons: tuple[tuple[wx.Button, wx.ListCtrl, str, str], ...]
+	#: The applications that are put to sleep automatically.
+	sleepList: wx.ListCtrl
+	#: The applications running now that are not on the autosleep list yet.
+	runningList: wx.ListCtrl
+	removeButton: wx.Button
+	addButton: wx.Button
+	addManuallySleptCheckBox: wx.CheckBox
+	removeManuallyWokenCheckBox: wx.CheckBox
+
 	def makeSettings(self, settingsSizer):
 		sHelper = guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
-		#: The list of applications as it will be saved, edited in place until then.
-		self._sleepApps: List[str] = addonConfig.getApps()
-		#: Every application currently running, filled in by L{onPanelActivated}.
-		self._runningApps: List[apps.RunningApp] = []
-		#: Set while a list is being refilled, so that the events that causes are
-		#: not mistaken for the user changing the selection.
+		self._sleepApps = addonConfig.getApps()
+		self._runningApps = []
 		self._refreshing = False
-		self._listSize = self.scaleSize((250, 150))
 
 		self.sleepList = self._addAppList(
 			sHelper,
@@ -87,7 +124,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 			# Translators: the label of the list of applications that are put to sleep automatically.
 			_("Apps to &sleep"),
 		)
-		self.removeButton = sHelper.addItem(wx.Button(self, label=self._removeLabel(1)))
+		self.removeButton = sHelper.addItem(wx.Button(self, label=_REMOVE))
 		self.removeButton.Bind(wx.EVT_BUTTON, self._onRemove)
 		self.removeButton.Bind(wx.EVT_KEY_DOWN, self._onRemoveKeyDown)
 
@@ -98,8 +135,12 @@ class AutosleepSettingsPanel(SettingsPanel):
 			# can be added to the autosleep list.
 			_("A&vailable apps"),
 		)
-		self.addButton = sHelper.addItem(wx.Button(self, label=self._addLabel(1)))
+		self.addButton = sHelper.addItem(wx.Button(self, label=_ADD))
 		self.addButton.Bind(wx.EVT_BUTTON, self._onAdd)
+		self._buttons = (
+			(self.removeButton, self.sleepList, _REMOVE, _REMOVE_SELECTED),
+			(self.addButton, self.runningList, _ADD, _ADD_SELECTED),
+		)
 
 		self.addManuallySleptCheckBox = sHelper.addItem(
 			wx.CheckBox(
@@ -145,7 +186,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 		listCtrl = sHelper.addLabeledControl(
 			label,
 			wx.ListCtrl,
-			size=self._listSize,
+			size=self.scaleSize(_LIST_SIZE),
 			style=wx.LC_REPORT | wx.LC_NO_HEADER,
 		)
 		listCtrl.InsertColumn(0, "")
@@ -200,7 +241,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 		winUser.sendMessage(handle, _LVM_SETEXTENDEDLISTVIEWSTYLE, _LVS_EX_LABELTIP | _LVS_EX_INFOTIP, 0)
 		winUser.sendMessage(handle, _LVM_SETTOOLTIPS, 0, 0)
 
-	def _availableApps(self) -> List[apps.RunningApp]:
+	def _availableApps(self) -> list[apps.RunningApp]:
 		"""The running applications that are not on the list already.
 
 		An application already listed is left out rather than shown and ignored,
@@ -211,7 +252,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 		listed = {addonConfig.normalize(app) for app in self._sleepApps}
 		return [app for app in self._runningApps if addonConfig.normalize(app.appName) not in listed]
 
-	def _runningAppsByName(self) -> Dict[str, apps.RunningApp]:
+	def _runningAppsByName(self) -> dict[str, apps.RunningApp]:
 		"""Each running application by its name, so that a listed one can be looked up."""
 		return {addonConfig.normalize(app.appName): app for app in self._runningApps}
 
@@ -234,7 +275,7 @@ class AutosleepSettingsPanel(SettingsPanel):
 		# both lists of applications. {app} is the name of the application.
 		return _("{app} (sleeping)").format(app=app.displayName)
 
-	def _sleepListRow(self, appName: str, running: Dict[str, apps.RunningApp]) -> str:
+	def _sleepListRow(self, appName: str, running: dict[str, apps.RunningApp]) -> str:
 		"""The line shown for an application on the autosleep list.
 
 		An application on the list need not be running, and one that is not has no
@@ -283,9 +324,9 @@ class AutosleepSettingsPanel(SettingsPanel):
 		finally:
 			self._refreshing = False
 
-	def _selectedIndices(self, listCtrl: wx.ListCtrl) -> List[int]:
+	def _selectedIndices(self, listCtrl: wx.ListCtrl) -> list[int]:
 		"""The positions of the items the user has selected, in order."""
-		indices: List[int] = []
+		indices: list[int] = []
 		index = listCtrl.GetFirstSelected()
 		while index != -1:
 			indices.append(index)
@@ -370,33 +411,16 @@ class AutosleepSettingsPanel(SettingsPanel):
 		return atTheEnd and self._selectedIndices(listCtrl) in ([], [current])
 
 	# --- the two buttons ----------------------------------------------------
-	def _removeLabel(self, selectionCount: int) -> str:
-		if selectionCount > 1:
-			# Translators: the button that takes several selected applications off the autosleep list.
-			return _("&Remove selected")
-		# Translators: the button that takes the current application off the autosleep list.
-		return _("&Remove")
-
-	def _addLabel(self, selectionCount: int) -> str:
-		if selectionCount > 1:
-			# Translators: the button that puts several selected applications on the autosleep list.
-			return _("&Add selected")
-		# Translators: the button that puts the current application on the autosleep list.
-		return _("&Add")
-
 	def _updateButtons(self):
-		"""Relabel each button for its list and switch it off for an empty one.
+		"""Rename each button for its list and switch it off for an empty one.
 
 		A disabled button is skipped when tabbing, which is what keeps a button
 		out of the way while the list it belongs to has nothing to act on.
 		"""
-		for button, listCtrl, label in (
-			(self.removeButton, self.sleepList, self._removeLabel),
-			(self.addButton, self.runningList, self._addLabel),
-		):
-			newLabel = label(len(self._selectedIndices(listCtrl)))
-			if button.GetLabel() != newLabel:
-				button.SetLabel(newLabel)
+		for button, listCtrl, single, several in self._buttons:
+			label = several if len(self._selectedIndices(listCtrl)) > 1 else single
+			if button.GetLabel() != label:
+				button.SetLabel(label)
 			button.Enable(listCtrl.GetItemCount() > 0)
 
 	def _onRemoveKeyDown(self, evt: wx.KeyEvent):
@@ -420,6 +444,25 @@ class AutosleepSettingsPanel(SettingsPanel):
 			self._updateButtons()
 		evt.Skip()
 
+	def _apply(
+		self,
+		sleepApps: list[str],
+		pressed: wx.ListCtrl,
+		other: wx.ListCtrl,
+		sleepIndex: int = 0,
+		runningIndex: int = 0,
+	):
+		"""Take the new autosleep list, redisplay both lists and hand focus back.
+
+		This is everything the two buttons do once each has worked out which
+		applications it is acting on. Refilling comes before the focus is handed
+		back, so that the list being given focus is the new one and what the screen
+		reader reads is where the user has actually ended up.
+		"""
+		self._sleepApps = sleepApps
+		self._refreshLists(sleepIndex=sleepIndex, runningIndex=runningIndex)
+		self._returnFocus(pressed, other)
+
 	def _onRemove(self, evt: wx.Event):
 		chosen = self._selectedIndices(self.sleepList)
 		if not chosen:
@@ -427,11 +470,12 @@ class AutosleepSettingsPanel(SettingsPanel):
 		# A row is a title as often as it is a name, so what a row stands for is
 		# found by its position in the list it was filled from, never by its text.
 		removed = set(chosen)
-		self._sleepApps = [app for index, app in enumerate(self._sleepApps) if index not in removed]
-		# Refill first, so that the list being given focus is the new one and what
-		# the screen reader reads is where the user has actually ended up.
-		self._refreshLists(sleepIndex=chosen[0])
-		self._returnFocus(self.sleepList, self.runningList)
+		self._apply(
+			[app for index, app in enumerate(self._sleepApps) if index not in removed],
+			self.sleepList,
+			self.runningList,
+			sleepIndex=chosen[0],
+		)
 
 	def _onAdd(self, evt: wx.CommandEvent):
 		chosen = self._selectedIndices(self.runningList)
@@ -440,9 +484,12 @@ class AutosleepSettingsPanel(SettingsPanel):
 		# As in _onRemove: the row is resolved by its position, since its text is
 		# a title rather than the name that is stored.
 		available = self._availableApps()
-		self._sleepApps = sorted(
-			self._sleepApps + [available[index].appName for index in chosen if index < len(available)],
-			key=addonConfig.normalize,
+		self._apply(
+			sorted(
+				self._sleepApps + [available[index].appName for index in chosen if index < len(available)],
+				key=addonConfig.normalize,
+			),
+			self.runningList,
+			self.sleepList,
+			runningIndex=chosen[0],
 		)
-		self._refreshLists(runningIndex=chosen[0])
-		self._returnFocus(self.runningList, self.sleepList)

@@ -32,7 +32,14 @@ max-complexity = 15
 ignore = [
 	# indentation contains tabs
 	"W191",
+	# lower snake case module names, we use lowerCamelCase instead
+	"N999",
 ]
+extend-unsafe-fixes = [
+	# Sort imports
+	"I001",
+]
+logger-objects = ["logHandler.log"]
 
 [tool.ruff.lint.per-file-ignores]
 # sconstruct contains many inbuilt functions not recognised by the lint,
@@ -56,7 +63,11 @@ exclude = [
 	# paths are relative to the configuration file.
 ]
 
-# Tell pyright where to load python code from
+# Tell pyright where to load python code from.
+# NVDA's own modules (api, config, gui, winUser and the rest) live in the `source`
+# directory of an NVDA source checkout. Without a path to one here, every import of
+# them is unresolved and nothing below can be checked, so add the checkout you use:
+#	"../nvda/source",
 extraPaths = [
 	"./addon",
 ]
@@ -73,18 +84,15 @@ strictSetInference = true
 
 # Compliant rules
 reportAbstractUsage = true
-reportArgumentType = true
 reportAssertAlwaysTrue = true
 reportAssertTypeFailure = true
 reportAssignmentType = true
-reportAttributeAccessIssue = true
 reportCallInDefaultInitializer = true
 reportCallIssue = true
 reportConstantRedefinition = true
 reportDuplicateImport = true
 reportFunctionMemberAccess = true
 reportGeneralTypeIssues = true
-reportImplicitOverride = true
 reportImplicitStringConcatenation = true
 reportImportCycles = true
 reportIncompatibleMethodOverride = true
@@ -92,7 +100,6 @@ reportIncompatibleVariableOverride = true
 reportIncompleteStub = true
 reportInconsistentConstructor = true
 reportInconsistentOverload = true
-reportIndexIssue = true
 reportInvalidStringEscapeSequence = true
 reportInvalidStubStatement = true
 reportInvalidTypeArguments = true
@@ -101,9 +108,6 @@ reportInvalidTypeVarUse = true
 reportMatchNotExhaustive = true
 reportMissingImports = true
 reportMissingModuleSource = true
-reportMissingParameterType = true
-reportMissingSuperCall = true
-reportMissingTypeArgument = true
 reportNoOverloadImplementation = true
 reportOperatorIssue = true
 reportOptionalCall = true
@@ -115,7 +119,6 @@ reportOptionalSubscript = true
 reportOverlappingOverload = true
 reportPossiblyUnboundVariable = true
 reportPrivateImportUsage = true
-reportPrivateUsage = true
 reportPropertyTypeMismatch = true
 reportRedeclaration = true
 reportReturnType = true
@@ -127,11 +130,7 @@ reportUnboundVariable = true
 reportUndefinedVariable = true
 reportUnhashable = true
 reportUninitializedInstanceVariable = true
-reportUnknownArgumentType = true
 reportUnknownLambdaType = true
-reportUnknownMemberType = true
-reportUnknownParameterType = true
-reportUnknownVariableType = true
 reportUnnecessaryCast = true
 reportUnnecessaryComparison = true
 reportUnnecessaryContains = true
@@ -142,7 +141,6 @@ reportUntypedBaseClass = true
 reportUntypedClassDecorator = true
 reportUntypedFunctionDecorator = true
 reportUntypedNamedTuple = true
-reportUnusedCallResult = true
 reportUnusedClass = true
 reportUnusedCoroutine = true
 reportUnusedExcept = true
@@ -159,3 +157,31 @@ reportMissingTypeStubs = false
 
 # Bad rules
 # These are sorted alphabetically and should be enabled and moved to compliant rules section when resolved.
+# NVDA turns all of these off for its own source as well. They are not failings of
+# this add-on: NVDA and wxPython are largely unannotated, so anything reaching into
+# either is of an unknown type, and the idioms both of them are built on (binding an
+# event, calling the next handler in a chain, overriding a hook) trip the rest.
+# These have been reasoned from what the add-on does rather than measured, since
+# checking them needs an NVDA source checkout on `extraPaths` above.
+
+# Everything NVDA or wx hands back is of an unknown type to a checker.
+reportUnknownArgumentType = false
+reportUnknownMemberType = false
+reportUnknownParameterType = false
+reportUnknownVariableType = false
+reportMissingParameterType = false
+reportMissingTypeArgument = false
+reportAttributeAccessIssue = false
+reportArgumentType = false
+reportIndexIssue = false
+
+# Idioms of NVDA and wx: a bound event handler returns nothing anyone reads, a hook
+# overrides a base class method that is not marked as overridable, and a settings
+# panel implements makeSettings and onSave without calling up to the base class.
+reportUnusedCallResult = false
+reportImplicitOverride = false
+reportMissingSuperCall = false
+
+# The add-on reaches into the gesture map of NVDA's global commands object, which is
+# the only way to take a wrapper back off a built-in command. See sleepMode.py.
+reportPrivateUsage = false

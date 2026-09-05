@@ -10,6 +10,8 @@ panel and the command that opens it, and notices when the user switches sleep
 mode on or off by hand.
 """
 
+from typing import TYPE_CHECKING
+
 import addonHandler
 import api
 import core
@@ -17,16 +19,21 @@ import eventHandler
 import globalPluginHandler
 import gui
 import queueHandler
-import speech
 import ui
 import wx
 from gui.settingsDialogs import NVDASettingsDialog
 from logHandler import log
 from scriptHandler import script
 
-from . import addonConfig
+from . import addonConfig, sleepMode
 from . import settings as settingsModule
-from . import sleepMode
+
+if TYPE_CHECKING:
+	# NVDA puts the translation lookup into this module's namespace at run time,
+	# which a type checker reading the source has no way of knowing. This says what
+	# it will be; nothing is imported when the add-on is actually running, which is
+	# what the suppression below records.
+	from gettext import gettext as _  # noqa: TC004
 
 addonHandler.initTranslation()
 
@@ -37,7 +44,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	scriptCategory = _("Autosleep Mode")
 
 	def __init__(self):
-		super(GlobalPlugin, self).__init__()
+		super().__init__()
 		addonConfig.initialize()
 		NVDASettingsDialog.categoryClasses.append(settingsModule.AutosleepSettingsPanel)
 		sleepMode.installManualToggleHook(self._onSleepModeToggled)
@@ -52,7 +59,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Harmless if the startup check was queued rather than registered: an
 		# extension point reports an unknown handler rather than complaining.
 		core.postNvdaStartup.unregister(self._checkFocusedApp)
-		super(GlobalPlugin, self).terminate()
+		super().terminate()
 
 	# --- the command --------------------------------------------------------
 	@script(
@@ -80,18 +87,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		This is the once-per-window-change moment: NVDA fires this event when the
 		foreground window changes and at no other time, so no listed application
 		is looked at twice for one switch.
+
+		The rest of the chain is run first, and in full. NVDAObject.event_foreground
+		sits at the end of it and cancels speech, which would swallow the
+		announcement if sleep mode were switched on before it; cutting the chain
+		short to protect the announcement would be worse still, since that same
+		handler also tells the vision handler where the foreground has gone, and
+		everything between here and it is the application's own module and whatever
+		other add-ons the user has. So the chain runs, and the announcement is made
+		after the cancellation rather than before it.
 		"""
-		if not self._focusedAppShouldSleep():
-			nextHandler()
-			return
-		# The rest of the chain is deliberately not run: NVDAObject.event_foreground,
-		# at the end of it, cancels speech, and that would swallow the announcement
-		# about to be made. Cancelling is still the right thing to do on a change of
-		# foreground window, so it happens here instead, before the announcement
-		# rather than after it, and NVDA stays quiet in this application from then
-		# on in any case.
-		speech.cancelSpeech()
-		sleepMode.activate()
+		nextHandler()
+		if self._focusedAppShouldSleep():
+			sleepMode.activate()
 
 	def event_gainFocus(self, obj, nextHandler):
 		"""Drop a focus event for an application that is already asleep.
@@ -165,7 +173,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		mode off" and the two are heard as one. Nothing is said when the list was
 		already as the toggle would leave it, so that the word means what it says.
 		"""
-		appModule = api.getFocusObject().appModule
+		focus = api.getFocusObject()
+		appModule = focus.appModule if focus else None
 		if appModule is None or not appModule.appName:
 			return
 		if appModule.sleepMode:

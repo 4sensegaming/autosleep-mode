@@ -17,14 +17,19 @@ option needs.
 """
 
 import functools
+from collections.abc import Callable
 
 import globalCommands
 from logHandler import log
 
+#: The type of the command being wrapped: NVDA calls a script with the object it
+#: is bound to and the gesture that triggered it.
+_Script = Callable[..., None]
+
 #: The unwrapped command, kept so that the wrapper can be undone.
-_originalScript = None
+_originalScript: _Script | None = None
 #: The wrapper currently installed over it, or C{None} if there is none.
-_wrapperScript = None
+_wrapperScript: _Script | None = None
 
 
 def activate():
@@ -84,6 +89,12 @@ def removeManualToggleHook():
 	# the top of that would throw its wrapper away.
 	if globalCommands.GlobalCommands.script_toggleCurrentAppSleepMode is _wrapperScript:
 		globalCommands.GlobalCommands.script_toggleCurrentAppSleepMode = _originalScript
+	# Deliberately not inside that test. The gestures are taken out of our wrapper
+	# whether or not the class attribute was ours to restore, since a gesture still
+	# pointing at the wrapper is a gesture still calling into this add-on. It is a
+	# no-op in the case the test guards against: an add-on that wrapped ours will
+	# have pointed the gestures at its own wrapper, and they are no longer ours to
+	# repoint.
 	_repointGestures(_wrapperScript, _originalScript)
 	_originalScript = None
 	_wrapperScript = None
