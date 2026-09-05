@@ -4,7 +4,7 @@
 
 * Autor: Lukáš Hosnedl
 * Minimální verze NVDA: 2026.1
-* Poslední testovaná verze NVDA: 2027.1
+* Poslední testovaná verze NVDA: 2026.2
 
 **Vytvořeno umělou inteligencí, navrženo a důkladně otestováno lidmi.**
 

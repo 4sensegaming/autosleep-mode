@@ -4,7 +4,7 @@
 
 * Author: Lukáš Hosnedl
 * Minimum NVDA version: 2026.1
-* Last tested NVDA version: 2027.1
+* Last tested NVDA version: 2026.2
 
 **Created by AI, designed and thoroughly tested by humans.**
 

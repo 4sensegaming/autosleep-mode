@@ -4,7 +4,7 @@
 
 * Autore: Lukáš Hosnedl
 * Versione minima di NVDA: 2026.1
-* Ultima versione di NVDA testata: 2027.1
+* Ultima versione di NVDA testata: 2026.2
 
 **Creato da un'intelligenza artificiale, progettato e collaudato a fondo da esseri umani.**
 
