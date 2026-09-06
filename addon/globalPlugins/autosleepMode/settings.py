@@ -214,7 +214,11 @@ class AutosleepSettingsPanel(SettingsPanel):
 		"""
 		row = listCtrl.GetContainingSizer()
 		item = row.GetItem(listCtrl)
-		if item is not None:
+		# wxPython's own type stub says this cannot be None. It can: the call
+		# underneath answers NULL for a window the sizer does not hold, which is
+		# exactly the case this guard is here for. The stub is wrong, so the
+		# checker is told so rather than the guard being taken out.
+		if item is not None:  # pyright: ignore[reportUnnecessaryComparison]
 			item.SetFlag(item.GetFlag() | wx.EXPAND)
 			# Asked for only where it means width. Which sizer a helper put the list
 			# in is that helper's business, so the sizer is asked rather than assumed.

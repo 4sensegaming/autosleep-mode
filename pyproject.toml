@@ -65,8 +65,10 @@ exclude = [
 
 # Tell pyright where to load python code from.
 # NVDA's own modules (api, config, gui, winUser and the rest) live in the `source`
-# directory of an NVDA source checkout. Without a path to one here, every import of
-# them is unresolved and nothing below can be checked, so add the checkout you use:
+# directory of an NVDA source checkout. There is deliberately none on this list:
+# `reportMissingImports` is off instead, so pyright treats every one of them as
+# unknown and still checks everything this add-on states for itself, which is what
+# the annotations are for. Add a checkout here to check the other side as well:
 #	"../nvda/source",
 extraPaths = [
 	"./addon",
@@ -94,7 +96,6 @@ reportDuplicateImport = true
 reportFunctionMemberAccess = true
 reportGeneralTypeIssues = true
 reportImplicitStringConcatenation = true
-reportImportCycles = true
 reportIncompatibleMethodOverride = true
 reportIncompatibleVariableOverride = true
 reportIncompleteStub = true
@@ -106,7 +107,7 @@ reportInvalidTypeArguments = true
 reportInvalidTypeForm = true
 reportInvalidTypeVarUse = true
 reportMatchNotExhaustive = true
-reportMissingImports = true
+reportMissingImports = false
 reportMissingModuleSource = true
 reportNoOverloadImplementation = true
 reportOperatorIssue = true
@@ -137,9 +138,7 @@ reportUnnecessaryContains = true
 reportUnnecessaryIsInstance = true
 reportUnnecessaryTypeIgnoreComment = true
 reportUnsupportedDunderAll = true
-reportUntypedBaseClass = true
 reportUntypedClassDecorator = true
-reportUntypedFunctionDecorator = true
 reportUntypedNamedTuple = true
 reportUnusedClass = true
 reportUnusedCoroutine = true
@@ -161,8 +160,10 @@ reportMissingTypeStubs = false
 # this add-on: NVDA and wxPython are largely unannotated, so anything reaching into
 # either is of an unknown type, and the idioms both of them are built on (binding an
 # event, calling the next handler in a chain, overriding a hook) trip the rest.
-# These have been reasoned from what the add-on does rather than measured, since
-# checking them needs an NVDA source checkout on `extraPaths` above.
+# These are measured rather than reasoned: pyright is run over this add-on with
+# `reportMissingImports` off, and each rule below is one that only ever fired on
+# what that leaves unresolved. That is NVDA alone; wxPython ships type stubs and
+# is checked like any other library, so nothing here is turned off on its account.
 
 # Everything NVDA or wx hands back is of an unknown type to a checker.
 reportUnknownArgumentType = false
@@ -185,3 +186,14 @@ reportMissingSuperCall = false
 # The add-on reaches into the gesture map of NVDA's global commands object, which is
 # the only way to take a wrapper back off a built-in command. See sleepMode.py.
 reportPrivateUsage = false
+
+# Every class this add-on puts on screen derives from one of NVDA's, and its one
+# command and the two window-enumeration callbacks are declared with NVDA's own
+# decorators. None of them is annotated.
+reportUntypedBaseClass = false
+reportUntypedFunctionDecorator = false
+
+# Every module here reaches its siblings through the package it is in
+# (`from . import addonConfig`), which is how a package is ordinarily written and
+# which this rule counts as a cycle. There is nothing else behind what it reports.
+reportImportCycles = false
