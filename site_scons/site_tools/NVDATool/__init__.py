@@ -39,10 +39,20 @@ def generate(env: Environment):
 		) and None,
 		lambda target, source, env: f"Generating Addon {target[0]}",
 	)
-	env["BUILDERS"]["NVDAAddon"] = Builder(
-		action=addonAction,
-		suffix=".nvda-addon",
-		src_suffix="/"
+	# Builders are registered through Append rather than by assigning into
+	# env["BUILDERS"]: SCons documents the two as equivalent, and Append says what
+	# is meant without going through a subscript whose value the environment
+	# declares as possibly None. BUILDERS holds a dictionary that installs each
+	# builder as a method of the environment as it is added, so appending one is
+	# what makes env.NVDAAddon and the rest callable below.
+	env.Append(
+		BUILDERS={
+			"NVDAAddon": Builder(
+				action=addonAction,
+				suffix=".nvda-addon",
+				src_suffix="/"
+			)
+		}
 	)
 
 	env.SetDefault(brailleTables={})
@@ -58,10 +68,14 @@ def generate(env: Environment):
 		) and None,
 		lambda target, source, env: f"Generating manifest {target[0]}",
 	)
-	env["BUILDERS"]["NVDAManifest"] = Builder(
-		action=manifestAction,
-		suffix=".ini",
-		src_siffix=".ini.tpl"
+	env.Append(
+		BUILDERS={
+			"NVDAManifest": Builder(
+				action=manifestAction,
+				suffix=".ini",
+				src_suffix=".ini.tpl"
+			)
+		}
 	)
 
 	translatedManifestAction = env.Action(
@@ -76,10 +90,14 @@ def generate(env: Environment):
 		lambda target, source, env: f"Generating translated manifest {target[0]}",
 	)
 
-	env["BUILDERS"]["NVDATranslatedManifest"] = Builder(
-		action=translatedManifestAction,
-		suffix=".ini",
-		src_siffix=".ini.tpl"
+	env.Append(
+		BUILDERS={
+			"NVDATranslatedManifest": Builder(
+				action=translatedManifestAction,
+				suffix=".ini",
+				src_suffix=".ini.tpl"
+			)
+		}
 	)
 
 	env.SetDefault(mdExtensions = {})
@@ -94,10 +112,14 @@ def generate(env: Environment):
 		) and None,
 		lambda target, source, env: f"Generating {target[0]}",
 	)
-	env["BUILDERS"]["md2html"] = env.Builder(
-		action=mdAction,
-		suffix=".html",
-		src_suffix=".md",
+	env.Append(
+		BUILDERS={
+			"md2html": env.Builder(
+				action=mdAction,
+				suffix=".html",
+				src_suffix=".md",
+			)
+		}
 	)
 
 

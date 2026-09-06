@@ -1,4 +1,5 @@
 
+import contextlib
 import gettext
 import re
 from pathlib import Path
@@ -30,13 +31,13 @@ def md2html(
 	if isinstance(moFile, str):
 		moFile = Path(moFile)
 
-	try:
-		with moFile.open("rb") as f:
-			_ = gettext.GNUTranslations(f).gettext
-	except Exception:
-		summary = addon_info["addon_summary"]
-	else:
-		summary = _(addon_info["addon_summary"])
+	# The English document is built without a mo file, and a language whose mo is
+	# missing or unreadable is no reason to fail a build over a title: either way
+	# the summary is left in English.
+	summary = addon_info["addon_summary"]
+	if moFile is not None:
+		with contextlib.suppress(Exception), moFile.open("rb") as f:
+			summary = gettext.GNUTranslations(f).gettext(summary)
 	version = addon_info["addon_version"]
 	title = f"{summary} {version}"
 	lang = source.parent.name.replace("_", "-")
@@ -77,4 +78,4 @@ def md2html(
 		)
 	)
 	with dest.open("w", encoding="utf-8") as f:
-		f.write(docText) # type: ignore
+		f.write(docText)
