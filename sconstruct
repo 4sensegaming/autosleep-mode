@@ -21,7 +21,7 @@ from SCons.Script import EnsurePythonVersion, Variables, BoolVariable, Environme
 from SCons.Node import FS
 
 # Add-on localization exchange facility and the template requires Python 3.10.
-# For best practice, use Python 3.11 or later to align with NVDA development.
+# For best practice, use Python 3.13, which is the version NVDA itself runs on.
 EnsurePythonVersion(3, 10)
 
 # Bytecode should not be written for build vars module to keep the repository root folder clean.
