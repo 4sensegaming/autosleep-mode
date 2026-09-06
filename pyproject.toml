@@ -47,6 +47,10 @@ logger-objects = ["logHandler.log"]
 "sconstruct" = ["F821"]
 
 [tool.pyright]
+# The Python NVDA stable runs on. Stated rather than inferred: pyright otherwise
+# takes it from whichever interpreter it finds first on PATH, so the version this
+# add-on is checked against would depend on the machine it is checked on.
+pythonVersion = "3.13"
 pythonPlatform = "Windows"
 typeCheckingMode = "strict"
 
