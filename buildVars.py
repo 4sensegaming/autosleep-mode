@@ -22,8 +22,7 @@ addon_info = AddonInfo(
 	# Add-on description
 	# Translators: Long description to be shown for this add-on on add-on information from add-on store
 	addon_description=_(
-		"Turns NVDA's sleep mode on automatically whenever an application you have listed comes to the "
-		"foreground."
+		"Turns NVDA's sleep mode on automatically whenever an application you have listed comes to the foreground."
 	),
 	# version
 	addon_version="1.0.0",
