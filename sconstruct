@@ -314,4 +314,8 @@ env.Depends(manifest, "buildVars.py")
 
 env.Depends(addon, manifest)
 env.Default(addon)
-env.Clean(addon, [".sconsign.dblite", "addon/doc/" + buildVars.baseLanguage + "/"])
+# The generated documents under addon/doc are cleaned as the build targets they
+# are, so naming their directory here as well removed nothing extra. All it did
+# was report a failure on every clean: SCons unlinks what it is given, and
+# Windows refuses to unlink a directory, empty or not.
+env.Clean(addon, ".sconsign.dblite")
