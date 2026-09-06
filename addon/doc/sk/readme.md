@@ -23,7 +23,7 @@ Vlastný vstavaný režim spánku NVDA v kombinácii s týmto doplnkom však vš
 
 ## Použitie
 
-Doplnok nepotrebuje žiadne vlastné klávesové skratky. Len čo je aplikácia v [zozname aplikácií na uspatie](#nastavenia), stačí do nej prepnúť: NVDA zaznamená nové okno v popredí, aplikáciu rozpozná a uspí sa pre ňu.
+Doplnok nepotrebuje žiadne vlastné klávesové skratky. Len čo je aplikácia v [zozname aplikácií na uspatie](#nastavenia), stačí sa do nej prepnúť: NVDA zaznamená nové okno v popredí, aplikáciu rozpozná a uspí sa pre ňu.
 
 Doplnok režim spánku nikdy sám nevypína. Správa sa rovnako ako vždy: trvá, kým ho nevypnete klávesom NVDA+shift+S (predvolene, pri rozložení klávesnice laptop NVDA+shift+Z), kým aplikáciu nezatvoríte, kým ju neodoberiete zo zoznamu aplikácií na uspatie, alebo kým sa z nej neprepnete inam.
 

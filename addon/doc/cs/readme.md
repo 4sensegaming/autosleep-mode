@@ -17,13 +17,13 @@ Mnoho aplikací určených pro nevidomé buď samo mluví, nebo své zprávy pos
 
 Mějte ale na paměti, že když je režim spánku zapnutý, NVDA nezpracovává vlastní příkazy a nereaguje na ně. Abyste je mohli použít, musíte režim spánku zase vypnout, nebo se z aplikace dočasně přepnout jinam.
 
-Dalším možným problémem u samoozvučených aplikací a u aplikací, které komunikují přímo s odečítači, jsou volby pro přerušení řeči při stisku klávesy Enter nebo jakékoli klávesy, které najdete v nastavení klávesnice NVDA. Pokud je některá z těchto voleb zapnutá, stisknete klávesu, která danou reakci vyvolá, a NVDA jste pro tuto aplikaci neuspali, svými stisky kláves v podstatě usekáváte řeč odečítače. Může se pak stát, že přeslechnete zprávu, kterou byste slyšet chtěli. Řešením je buď přerušování řeči při psaní pro danou aplikaci ručně vypnout, nebo si pro ni vytvořit konfigurační profil.
+Dalším možným problémem u aplikací s vlastním ozvučením a u aplikací, které komunikují přímo s odečítači, jsou volby pro přerušení řeči při stisku klávesy Enter nebo jakékoli klávesy, které najdete v nastavení klávesnice NVDA. Pokud je některá z těchto voleb zapnutá, stisknete klávesu, která danou reakci vyvolá, a NVDA jste pro tuto aplikaci neuspali, svými stisky kláves v podstatě usekáváte řeč odečítače. Může se pak stát, že přeslechnete zprávu, kterou byste slyšet chtěli. Řešením je buď přerušování řeči při psaní pro danou aplikaci ručně vypnout, nebo si pro ni vytvořit konfigurační profil.
 
 Vlastní vestavěný režim spánku NVDA v kombinaci s tímto doplňkem ale všechny tyto starosti odstraní úplně a natrvalo, protože když NVDA spí, stisky kláves řeč nepřerušují vůbec, a to ani řeč, kterou vyvolala přímo samotná aplikace.
 
 ## Použití
 
-Doplněk nepotřebuje žádné vlastní klávesové zkratky. Jakmile je aplikace v [seznamu aplikací k uspání](#nastavení), stačí do ní přepnout: NVDA zaznamená nové okno v popředí, aplikaci rozpozná a uspí se pro ni.
+Doplněk nepotřebuje žádné vlastní klávesové zkratky. Jakmile je aplikace v [seznamu aplikací k uspání](#nastavení), stačí se do ní přepnout: NVDA zaznamená nové okno v popředí, aplikaci rozpozná a uspí se pro ni.
 
 Doplněk režim spánku nikdy sám nevypíná. Chová se stejně jako vždycky: trvá, dokud ho nevypnete klávesou NVDA+shift+S (ve výchozím nastavení, v laptopovém rozložení klávesnice NVDA+shift+Z), dokud aplikaci nezavřete, dokud ji neodeberete ze seznamu aplikací k uspání, nebo dokud se z ní nepřepnete jinam.
 
