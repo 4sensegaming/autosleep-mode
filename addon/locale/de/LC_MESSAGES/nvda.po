@@ -16,9 +16,6 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#. : What each button is called, singular and plural. A button is renamed as the
-#. : selection it acts on grows past one and shrinks back again, so both names are
-#. : needed at once.
 #. Translators: the button that takes the current application off the autosleep list.
 msgid "&Remove"
 msgstr "&Entfernen"
@@ -38,7 +35,6 @@ msgstr "Ausgewählte &hinzufügen"
 #. Translators: the title of the add-on's category in NVDA's Settings dialog.
 #. Translators: the category this add-on's commands are listed under in the
 #. Input gestures dialog.
-#. Add-on summary/title, usually the user visible name of the add-on
 #. Translators: Summary/title for this add-on
 #. to be shown on installation and add-on information found in add-on store
 msgid "Autosleep Mode"
@@ -86,7 +82,6 @@ msgstr ""
 "Schaltet den Schlafmodus von NVDA automatisch ein, sobald eine von Ihnen "
 "aufgeführte Anwendung in den Vordergrund kommt."
 
-#. Brief changelog for this version
 #. Translators: what's new content for the add-on version to be shown in the add-on store
 msgid "Initial release"
 msgstr "Erste Version"

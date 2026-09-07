@@ -29,7 +29,13 @@ XGETTEXT_COMMON_ARGS = (
 	"--package-name=$gettext_package_name "
 	"--package-version=$gettext_package_version "
 	"--keyword=pgettext:1c,2 "
-	"-c -o $TARGET $SOURCES"
+	# Only comment blocks that begin with "Translators:" are extracted, which is
+	# what NVDA's own build asks xgettext for. Bare -c, which the add-on template
+	# ships, takes every comment preceding a translatable string, so a note left
+	# for whoever maintains the code is handed to translators as if it were
+	# guidance for them.
+	"--add-comments=Translators: "
+	"-o $TARGET $SOURCES"
 )
 
 

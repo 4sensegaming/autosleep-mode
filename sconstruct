@@ -285,16 +285,23 @@ mergePot = env.gettextMergePotFile("${addon_name}-merge.pot", i18nFiles, **gette
 env.Alias("mergePot", mergePot)
 env.Depends(mergePot, i18nFiles)
 
-# Propagate the regenerated pot into every existing translation.
+# Propagate the regenerated strings into every existing translation.
 # msgmerge keeps the translations already made, marks any entry whose English
 # source string changed as fuzzy so the translator revisits exactly those, and
 # drops entries that no longer exist in the source. Together with the pot target
 # above this is what keeps the `_()` call in the Python source the only place an
 # English string ever has to be edited.
+#
+# Merged from the merge pot rather than the pot itself, which is what the merge
+# pot exists for. It carries no source references and no header, so a po file
+# comes back from a merge holding exactly its translations: no line numbers to be
+# stripped again on the way into git, and no timestamp rewritten in a file whose
+# translations did not move. The pot keeps its references, being the copy a
+# translation platform is handed.
 poFiles = [dir.File(os.path.join("LC_MESSAGES", "nvda.po")) for dir in langDirs]
 updatePo = env.Alias(
 	"updatePo",
-	pot,
+	mergePot,
 	[
 		Action(
 			f'msgmerge --update --backup=none --previous "{po.path}" $SOURCE',
