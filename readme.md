@@ -46,13 +46,9 @@ What's stored and matched is the name NVDA knows the app by, which is the name o
 
 The add-on respects configuration profiles, so your settings are saved for each one independently.
 
-## License
-
-This add-on is covered by the GNU General Public License, version 2. See the file COPYING.txt for details.
-
 ## Contributing
 
-If you would like to contribute to the add-on's development by providing translations, reporting issues or opening a pull request, you can [do so in its GitHub repository](https://github.com/4sensegaming/autosleep-mode). All contributions are welcome and appreciated.
+If you would like to contribute to the add-on's development by providing translations, reporting issues or opening a pull request, and you know how to, you can [do so in its GitHub repository](https://github.com/4sensegaming/autosleep-mode). All contributions are welcome and appreciated.
 
 ## Changelog
 

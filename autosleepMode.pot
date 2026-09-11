@@ -7,7 +7,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: autosleepMode 1.0.0\n"
-"POT-Creation-Date: 2026-09-07 00:17+0200\n"
+"POT-Creation-Date: 2026-09-11 21:21+0200\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,22 +17,22 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 
 #. Translators: the button that takes the current application off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:84
+#: addon\globalPlugins\autosleepMode\settings.py:40
 msgid "&Remove"
 msgstr ""
 
 #. Translators: the button that takes several selected applications off the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:86
+#: addon\globalPlugins\autosleepMode\settings.py:42
 msgid "&Remove selected"
 msgstr ""
 
 #. Translators: the button that puts the current application on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:88
+#: addon\globalPlugins\autosleepMode\settings.py:44
 msgid "&Add"
 msgstr ""
 
 #. Translators: the button that puts several selected applications on the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:90
+#: addon\globalPlugins\autosleepMode\settings.py:46
 msgid "&Add selected"
 msgstr ""
 
@@ -41,52 +41,53 @@ msgstr ""
 #. Input gestures dialog.
 #. Translators: Summary/title for this add-on
 #. to be shown on installation and add-on information found in add-on store
-#: addon\globalPlugins\autosleepMode\settings.py:95
-#: addon\globalPlugins\autosleepMode\__init__.py:44 buildVars.py:21
+#: addon\globalPlugins\autosleepMode\settings.py:51
+#: addon\globalPlugins\autosleepMode\__init__.py:35 buildVars.py:21
 msgid "Autosleep Mode"
 msgstr ""
 
 #. Translators: the label of the list of applications that are put to sleep automatically.
-#: addon\globalPlugins\autosleepMode\settings.py:125
+#: addon\globalPlugins\autosleepMode\settings.py:74
 msgid "Apps to &sleep"
 msgstr ""
 
 #. Translators: the label of the list of applications that are running now and
 #. can be added to the autosleep list.
-#: addon\globalPlugins\autosleepMode\settings.py:136
+#: addon\globalPlugins\autosleepMode\settings.py:85
 msgid "A&vailable apps"
 msgstr ""
 
 #. Translators: an option to grow the list from the applications slept by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:149
+#: addon\globalPlugins\autosleepMode\settings.py:98
 msgid "Add apps with &manually activated sleep mode to the autosleep list"
 msgstr ""
 
 #. Translators: an option to shrink the list by the applications woken by hand.
-#: addon\globalPlugins\autosleepMode\settings.py:158
+#: addon\globalPlugins\autosleepMode\settings.py:107
 msgid "Remove &manually woken apps from the autosleep list"
 msgstr ""
 
 #. Translators: how an application NVDA is currently asleep in is shown in
 #. both lists of applications. {app} is the name of the application.
-#: addon\globalPlugins\autosleepMode\settings.py:280
+#: addon\globalPlugins\autosleepMode\settings.py:173
 #, python-brace-format
 msgid "{app} (sleeping)"
 msgstr ""
 
 #. Translators: the description of the command that opens the add-on's
 #. settings, shown in the Input gestures dialog.
-#: addon\globalPlugins\autosleepMode\__init__.py:68
+#: addon\globalPlugins\autosleepMode\__init__.py:56
 msgid "Displays autosleep mode settings"
 msgstr ""
 
 #. Translators: announced right after NVDA's own "Sleep mode on" or
 #. "Sleep mode off" when that toggle has just put the application on the
 #. autosleep list or taken it off it.
-#: addon\globalPlugins\autosleepMode\__init__.py:190
+#: addon\globalPlugins\autosleepMode\__init__.py:110
 msgid "Saved"
 msgstr ""
 
+#. Translators: Long description to be shown for this add-on on add-on information from add-on store
 #: buildVars.py:25
 msgid ""
 "Turns NVDA's sleep mode on automatically whenever an application you have "

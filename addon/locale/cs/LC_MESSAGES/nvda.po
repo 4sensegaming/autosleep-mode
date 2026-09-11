@@ -75,6 +75,7 @@ msgstr "Zobrazí nastavení automatického režimu spánku"
 msgid "Saved"
 msgstr "Uloženo"
 
+#. Translators: Long description to be shown for this add-on on add-on information from add-on store
 msgid ""
 "Turns NVDA's sleep mode on automatically whenever an application you have "
 "listed comes to the foreground."

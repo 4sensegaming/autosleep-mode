@@ -20,8 +20,8 @@ addon_info = AddonInfo(
 	# to be shown on installation and add-on information found in add-on store
 	addon_summary=_("Autosleep Mode"),
 	# Add-on description
-	# Translators: Long description to be shown for this add-on on add-on information from add-on store
 	addon_description=_(
+		# Translators: Long description to be shown for this add-on on add-on information from add-on store
 		"Turns NVDA's sleep mode on automatically whenever an application you have listed comes to the foreground."
 	),
 	# version
@@ -46,7 +46,7 @@ addon_info = AddonInfo(
 	# Do not change unless you know what you are doing!
 	addon_updateChannel=None,
 	# Add-on license such as GPL 2
-	addon_license="GPL v2",
+	addon_license="GPL v2 or later",
 	# URL for the license document the ad-on is licensed under
 	addon_licenseURL="https://www.gnu.org/licenses/old-licenses/gpl-2.0.html",
 )

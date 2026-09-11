@@ -74,6 +74,7 @@ msgstr "Mostra le impostazioni della modalità riposo automatica"
 msgid "Saved"
 msgstr "Salvato"
 
+#. Translators: Long description to be shown for this add-on on add-on information from add-on store
 msgid ""
 "Turns NVDA's sleep mode on automatically whenever an application you have "
 "listed comes to the foreground."

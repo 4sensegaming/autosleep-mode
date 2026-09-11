@@ -46,13 +46,9 @@ Ukládá se a porovnává název, pod kterým aplikaci zná NVDA, tedy název sp
 
 Doplněk respektuje konfigurační profily, takže se vaše nastavení ukládá pro každý z nich samostatně.
 
-## Licence
-
-Tento doplněk je šířen pod licencí GNU General Public License verze 2. Podrobnosti najdete v souboru COPYING.txt.
-
 ## Spolupráce
 
-Pokud byste chtěli přispět k vývoji doplňku – ať už překladem, hlášením chyb nebo vytvořením pull requestu – můžete tak učinit v jeho [repozitáři na GitHubu](https://github.com/4sensegaming/autosleep-mode). Veškerou pomoc vítám a vážím si jí.
+Pokud byste chtěli přispět k vývoji doplňku – ať už překladem, hlášením chyb nebo vytvořením pull requestu – a víte, jak na to, můžete tak učinit v jeho [repozitáři na GitHubu](https://github.com/4sensegaming/autosleep-mode). Veškerou pomoc vítám a vážím si jí.
 
 ## Historie změn
 

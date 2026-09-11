@@ -286,9 +286,10 @@ env.Alias("mergePot", mergePot)
 env.Depends(mergePot, i18nFiles)
 
 # Propagate the regenerated strings into every existing translation.
-# msgmerge keeps the translations already made, marks any entry whose English
-# source string changed as fuzzy so the translator revisits exactly those, and
-# drops entries that no longer exist in the source. Together with the pot target
+# msgmerge keeps the translations already made and marks any entry whose English
+# source string changed as fuzzy, so the translator revisits exactly those. An
+# entry no longer in the source it keeps as obsolete, forever; msgattrib then
+# drops those, since msgmerge has no option to. Together with the pot target
 # above this is what keeps the `_()` call in the Python source the only place an
 # English string ever has to be edited.
 #
@@ -303,11 +304,18 @@ updatePo = env.Alias(
 	"updatePo",
 	mergePot,
 	[
-		Action(
-			f'msgmerge --update --backup=none --previous "{po.path}" $SOURCE',
-			f"Updating translation {po.path}",
-		)
+		action
 		for po in poFiles
+		for action in (
+			Action(
+				f'msgmerge --update --backup=none --previous "{po.path}" $SOURCE',
+				f"Updating translation {po.path}",
+			),
+			Action(
+				f'msgattrib --no-obsolete --output-file="{po.path}" "{po.path}"',
+				f"Dropping obsolete entries from {po.path}",
+			),
+		)
 	],
 )
 # The po files are updated in place, so there is no target whose timestamp scons
